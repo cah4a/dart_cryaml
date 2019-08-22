@@ -1,0 +1,13 @@
+name: cryaml
+description: crYAML — YAML on steroids
+
+environment:
+  sdk: ">=2.2.2 <3.0.0"
+
+dependencies:
+  petitparser: ^2.3.0
+
+dev_dependencies:
+  test:
+  mockito:
+
