@@ -12,7 +12,7 @@ import 'expressions.dart';
 final expressionParser = GrammarParser(_ExpressionGrammar());
 
 class _ExpressionGrammar extends GrammarDefinition {
-  Parser start() => ref(expression) | ref(keywordExpr);
+  Parser start() => ref(expression);
 
   Parser expression() => ref(node).separatedBy(operations).map(parseExpression);
 
@@ -30,10 +30,6 @@ class _ExpressionGrammar extends GrammarDefinition {
               .optional() &
           char("]"))
       .map(parseArray);
-
-  Parser keywordExpr() => keywordToken.map(
-        (keyword) => KeywordExpression(keyword),
-      );
 
   Parser call() => (funcNameToken.trim() &
           char("(").trim() &

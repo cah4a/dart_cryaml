@@ -22,8 +22,11 @@ abstract class Token {
 
   factory Token.expr(Expression expression) = ExpressionToken;
 
-  factory Token.directive(String name, List<Expression> arguments) =
+  factory Token.directive(String name, List arguments) =
       DirectiveToken;
+
+  factory Token.keyword(String name) =
+      KeywordToken;
 }
 
 class IndentToken implements Token {
@@ -63,42 +66,23 @@ class KeyToken implements Token {
   int get hashCode => name.hashCode;
 }
 
-class StringToken implements Token {
-  final String value;
+class KeywordToken implements Token {
+  final String name;
 
-  StringToken(this.value);
-
-  @override
-  String toString() => 'string($value)';
+  KeywordToken(this.name);
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is StringToken &&
+      other is KeyToken &&
           runtimeType == other.runtimeType &&
-          value == other.value;
+          name == other.name;
 
   @override
-  int get hashCode => value.hashCode;
-}
-
-class NumberToken implements Token {
-  final num value;
-
-  NumberToken(this.value);
+  String toString() => 'keyword($name)';
 
   @override
-  String toString() => 'number($value)';
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is StringToken &&
-          runtimeType == other.runtimeType &&
-          value == other.value;
-
-  @override
-  int get hashCode => value.hashCode;
+  int get hashCode => name.hashCode;
 }
 
 class ExpressionToken implements Token {
@@ -122,17 +106,17 @@ class ExpressionToken implements Token {
 
 class DirectiveToken implements Token {
   final String name;
-  final List<Expression> arguments;
+  final List arguments;
 
   DirectiveToken(this.name, this.arguments);
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is DirectiveToken &&
-              runtimeType == other.runtimeType &&
-              name == other.name &&
-              listEquals(arguments, other.arguments);
+      other is DirectiveToken &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          listEquals(arguments, other.arguments);
 
   @override
   String toString() => "directive($name, $arguments)";

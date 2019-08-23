@@ -30,14 +30,23 @@ class CrYAMLException extends FormatException {
 
     if (errorLineStart > 0) {
       final prevLineStart = _lineStart(errorLineStart - 1);
-      code = (line - 1).toString().padLeft(offset) + " | " +
+      code = (line - 1).toString().padLeft(offset) +
+          " | " +
           buffer.substring(prevLineStart, errorLineStart) +
           "\n" +
           code;
     }
 
     return "Error on line $line, column $col: $message\n\n"
-        "$code\n" +
+            "$code\n" +
         "^".padLeft(col + 3 + offset, "-");
   }
+}
+
+class CrYAMLEvaluateException implements Exception {
+  final message;
+
+  CrYAMLEvaluateException(this.message);
+
+  String toString() => "Coudn't evaluate: $message";
 }

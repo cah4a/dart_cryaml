@@ -34,10 +34,6 @@ void main() {
     expect(parse('36.6'), LiteralExpression(36.6));
   });
 
-  test('keyword', () {
-    expect(parse("buzzword"), KeywordExpression("buzzword"));
-  });
-
   test('array', () {
     expect(
       parse('[1, "foo", 3]'),

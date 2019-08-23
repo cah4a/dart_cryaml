@@ -10,4 +10,5 @@ dependencies:
 dev_dependencies:
   test:
   mockito:
+  yaml:
 

@@ -2,8 +2,8 @@ import 'dart:math';
 
 import 'package:cryaml/src/exceptions.dart';
 import 'package:cryaml/src/expression_parser.dart';
+import 'package:cryaml/src/indentator.dart';
 import 'package:cryaml/src/token.dart';
-import 'package:cryaml/src/utils.dart';
 import 'package:petitparser/petitparser.dart' as pp;
 
 import 'expressions.dart';
@@ -12,7 +12,7 @@ import 'expressions.dart';
 class Tokenizer {
   const Tokenizer();
 
-  Iterable<Token> parse(String source) sync* {
+  Iterable<Token> tokenize(String source) sync* {
     Context ctx = Context(source);
 
     if (source.isEmpty) {
@@ -23,22 +23,20 @@ class Tokenizer {
       yield* ctx.execute();
     }
 
-    yield* ctx.dedent();
+    yield* ctx.indentation();
   }
 }
 
 typedef Iterable<Token> State(Context context);
 
 class Context {
+  final indentator = Indentator();
   final String buffer;
 
   Context(this.buffer);
 
   State state = begin;
   int pos = 0;
-  int indent;
-
-  List<int> indents = [];
 
   bool get isEnd => pos >= buffer.length;
 
@@ -109,44 +107,40 @@ class Context {
   String consumeChar() => buffer[pos++];
 
   trim() {
-    while (!isEnd && [" "].contains(char)) {
+    while (!isEnd && (char == " " || char == "\t")) {
       pos++;
     }
   }
 
-  Token ensureIndent() {
-    if (adviceIndent().isEmpty) {
-      fail("Indent expected");
-    }
-    return Token.indent;
-  }
+  Iterable<Token> indentation() sync* {
+    final startPos = pos;
+    grabTo(RegExp(r"\S|$|\n"), "Dedent expected");
+    final isListMark = !isEnd && char == "-";
 
-  Iterable<Token> adviceIndent() sync* {
-    final nextStartLine = buffer.indexOf(RegExp(r"\S|$"), pos);
-    final newIndent = nextStartLine - pos;
-    if (newIndent <= indent) {
-      return;
-    }
-    indent = newIndent;
-    indents.add(newIndent);
-    yield Token.indent;
-  }
+    final newIndent = pos - startPos;
+    int listMarkIndent;
 
-  Iterable<Token> dedent() sync* {
-    final pref = grabTo(RegExp(r"\S|$|\n"), "Dedent expected");
-
-    if (pref.length > indent) {
-      fail("Unexpected indent");
+    if (isListMark) {
+      pos++;
+      trim();
+      listMarkIndent = pos - startPos;
     }
 
-    while (pref.length < indent && indents.length > 1) {
-      yield Token.dedent;
-      indents.removeLast();
-      indent = indents.last;
-    }
-
-    if (pref.length > indent) {
-      fail("Undefined indentation");
+    for (final indent in indentator(newIndent, listMarkIndent)) {
+      switch (indent) {
+        case Indentation.indent:
+          yield Token.indent;
+          break;
+        case Indentation.dedent:
+          yield Token.dedent;
+          break;
+        case Indentation.listIndent:
+          yield Token.listMark;
+          break;
+        case Indentation.unknown:
+          fail("Undefined indentation");
+          break;
+      }
     }
   }
 
@@ -162,20 +156,13 @@ class Context {
 }
 
 Iterable<Token> begin(Context context) sync* {
-  final block = context.lookahead(RegExp(r"[\s\n\t\r]*"));
-  final lineStart = max(0, context.buffer.lastIndexOf("\n", block.length));
-  final indent = block.length - lineStart;
-
-  context.pos = lineStart;
-  context.indent = indent;
-  context.indents = [indent];
   context.state = start;
 }
 
 Iterable<Token> start(Context context) sync* {
   context.skip(RegExp(r"[\s\t]*(?:\n|$)"));
 
-  yield* context.dedent();
+  yield* context.indentation();
 
   if (context.isEnd) {
     return;
@@ -195,10 +182,17 @@ Iterable<Token> start(Context context) sync* {
     return;
   }
 
-  final key = context.grabUntil(":", "Semicolon expected");
-  yield Token.key(key);
-  context.trim();
-  context.state = objectValue;
+  final key = context.lookahead(RegExp("[A-Za-z][A-Za-z0-9-_]*[\s\t]*:"));
+
+  if (key != null) {
+    yield Token.key(key.substring(0, key.length - 1).trim());
+    context.pos += key.length;
+    context.trim();
+    context.state = objectValue;
+    return;
+  }
+
+  context.state = expression;
 }
 
 Iterable<Token> directive(Context context) sync* {
@@ -219,7 +213,6 @@ Iterable<Token> directive(Context context) sync* {
   yield Token.directive(name, args);
   context.trim();
   context.ensureNewLine();
-  yield* context.adviceIndent();
   context.state = start;
 }
 
@@ -227,7 +220,6 @@ Iterable<Token> objectValue(Context context) sync* {
   switch (context.char) {
     case "\n":
       context.consumeChar();
-      yield context.ensureIndent();
       context.state = start;
       break;
     default:
@@ -242,15 +234,42 @@ Iterable<Token> expression(Context context) sync* {
 }
 
 Expression parseExpression(Context context) {
+  final startPosition = context.pos;
+
+  int expectEndOfExpr = 0;
+
+  loop:
+  while (!context.isEnd) {
+    switch (context.char) {
+      case "(":
+      case "[":
+      case "{":
+        expectEndOfExpr++;
+        break;
+      case ")":
+      case "[":
+      case "{":
+        expectEndOfExpr--;
+        break;
+      case " ":
+      case "\n":
+        if (expectEndOfExpr <= 0) {
+          break loop;
+        }
+    }
+    context.pos++;
+  }
+
   final result = expressionParser.parseOn(pp.Context(
-    context.buffer,
-    context.pos,
+    context.buffer.substring(startPosition, context.pos),
+    0,
   ));
 
   if (result.isFailure) {
-    context.fail(result.message, result.position);
+    context.fail(result.message, startPosition + result.position);
   }
 
-  context.pos = result.position;
+  assert(context.pos == startPosition + result.position);
+
   return result.value;
 }

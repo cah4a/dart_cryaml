@@ -2,22 +2,6 @@ import 'utils.dart';
 
 class Expression<T> {}
 
-class KeywordExpression extends Expression<String> {
-  final String value;
-
-  KeywordExpression(this.value);
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is KeywordExpression &&
-          runtimeType == other.runtimeType &&
-          value == other.value;
-
-  @override
-  int get hashCode => value.hashCode;
-}
-
 class LiteralExpression<T> extends Expression<T> {
   final T value;
 
