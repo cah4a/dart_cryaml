@@ -319,7 +319,7 @@ main() {
       expect(
         parser.tokenize(source),
         [
-          Token.directive("foobar", []),
+          Token.directive("foobar", null),
         ],
       );
     });
@@ -333,7 +333,7 @@ main() {
       expect(
         parser.tokenize(source),
         [
-          Token.directive("foobar", []),
+          Token.directive("foobar", null),
           Token.indent,
           Token.key("nested"),
           Token.expr(LiteralExpression<bool>(true)),
@@ -356,7 +356,10 @@ main() {
     });
 
     test("directive with list of expressions", () {
-      final source = [r'@foobar $var in [1, 2, $foo]'].join("\n");
+      final source = [
+        r'@foobar $var in [1, 2,',
+        r'$foo + 5.0]'
+      ].join("\n");
 
       expect(
         parser.tokenize(source),
@@ -367,9 +370,51 @@ main() {
             ArrayExpression([
               LiteralExpression<int>(1),
               LiteralExpression<int>(2),
-              VarExpression("foo"),
+              BinaryExpression(
+                VarExpression("foo"),
+                "+",
+                LiteralExpression<double>(5.0),
+              ),
             ]),
           ]),
+        ],
+      );
+    });
+
+    test("list of directives", () {
+      final source = [
+        r'- @foobar',
+        r'- @foobar',
+      ].join("\n");
+
+      expect(
+        parser.tokenize(source),
+        [
+          Token.listMark,
+          Token.directive("foobar", null),
+          Token.listMark,
+          Token.directive("foobar", null),
+        ],
+      );
+    });
+
+    test("directive with nested directives", () {
+      final source = [
+        r'@foo $var',
+        r'  key: 1',
+        r'',
+        r'  @something',
+      ].join("\n");
+
+      expect(
+        parser.tokenize(source),
+        [
+          Token.directive("foo", [VarExpression("var")]),
+          Token.indent,
+          Token.key("key"),
+          Token.expr(LiteralExpression<int>(1)),
+          Token.directive("something", null),
+          Token.dedent,
         ],
       );
     });

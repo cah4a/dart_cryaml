@@ -1,12 +1,14 @@
+import 'package:cryaml/src/exceptions.dart';
 import 'package:cryaml/src/expression_parser.dart';
 import 'package:cryaml/src/expressions.dart';
+import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
 dynamic parse(String value) {
   final result = expressionParser.parse(value);
 
   if (result.isFailure) {
-    throw result.message;
+    throw CrYAMLException(result.message, result.buffer, result.position);
   }
 
   return result.value;
@@ -36,11 +38,15 @@ void main() {
 
   test('array', () {
     expect(
-      parse('[1, "foo", 3]'),
+      parse('[1, "foo", 3 + 1]'),
       ArrayExpression([
         LiteralExpression<int>(1),
         LiteralExpression<String>("foo"),
-        LiteralExpression<int>(3),
+        BinaryExpression(
+          LiteralExpression<int>(3),
+          "+",
+          LiteralExpression<int>(1),
+        ),
       ]),
     );
   });
@@ -83,6 +89,45 @@ void main() {
     );
   });
 
+  test('call combined arguments', () {
+    expect(
+      parse('foobar(1, answer: 42)'),
+      CallExpression(
+        "foobar",
+        [
+          LiteralExpression<int>(1),
+        ],
+        {
+          "answer": LiteralExpression<int>(42),
+        },
+      ),
+    );
+  });
+
+  test('call expression arguments', () {
+    expect(
+      parse('foobar(1   / 2 \n,\t 2, arg: 5 + \$var)'),
+      CallExpression(
+        "foobar",
+        [
+          BinaryExpression(
+            LiteralExpression<int>(1),
+            "/",
+            LiteralExpression<int>(2),
+          ),
+          LiteralExpression<int>(2)
+        ],
+        {
+          "arg": BinaryExpression(
+            LiteralExpression<int>(5),
+            "+",
+            VarExpression("var"),
+          ),
+        },
+      ),
+    );
+  });
+
   test('binary expression', () {
     expect(
       parse(r"202 + $number"),
@@ -90,6 +135,21 @@ void main() {
         LiteralExpression<int>(202),
         "+",
         VarExpression("number"),
+      ),
+    );
+  });
+
+  test('binary with grouping', () {
+    expect(
+      parse(r"202 + ($number + 4)"),
+      BinaryExpression(
+        LiteralExpression<int>(202),
+        "+",
+        BinaryExpression(
+          VarExpression("number"),
+          "+",
+          LiteralExpression<int>(4),
+        ),
       ),
     );
   });
@@ -106,6 +166,19 @@ void main() {
           VarExpression("number"),
         ),
       ),
+    );
+  });
+
+  test('new lines, tabs, other stuff', () {
+    expect(
+      parse("200 \n\n + [\n\n3.0  \t , 7.0 \n\t\t]"),
+      BinaryExpression(
+          LiteralExpression<int>(200),
+          "+",
+          ArrayExpression([
+            LiteralExpression<double>(3),
+            LiteralExpression<double>(7),
+          ])),
     );
   });
 }

@@ -41,6 +41,9 @@ class ArrayExpression extends Expression<List> {
 
   @override
   int get hashCode => children.hashCode;
+
+  @override
+  String toString() => children.toString();
 }
 
 class VarExpression extends Expression {

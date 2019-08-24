@@ -24,6 +24,7 @@ void main() {
     final cryaml = loadCrYAML(
       [
         r'foo: [1, 2, $var]',
+        r'bar: 1 + 3'
       ].join("\n"),
       null,
     );
@@ -32,6 +33,7 @@ void main() {
       cryaml.evaluate({"var": 3}),
       {
         "foo": [1, 2, 3],
+        "bar": 4,
       },
     );
   });

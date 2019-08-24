@@ -11,4 +11,5 @@ dev_dependencies:
   test:
   mockito:
   yaml:
+  test_coverage: ^0.3.0
 

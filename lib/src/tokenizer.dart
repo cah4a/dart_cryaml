@@ -203,12 +203,13 @@ Iterable<Token> directive(Context context) sync* {
 
   context.trim();
 
-  final args = <Expression>[];
-
-  while (!context.isEnd && context.char != "\n") {
-    args.add(parseExpression(context));
-    context.trim();
-  }
+  final args = parseExpression(
+    (expressionParser | keywordToken).separatedBy(
+      pp.char(" ").plus(),
+      includeSeparators: false,
+    ).optional(),
+    context,
+  );
 
   yield Token.directive(name, args);
   context.trim();
@@ -228,12 +229,12 @@ Iterable<Token> objectValue(Context context) sync* {
 }
 
 Iterable<Token> expression(Context context) sync* {
-  yield Token.expr(parseExpression(context));
+  yield Token.expr(parseExpression(expressionParser, context));
   context.state = start;
   context.ensureNewLine();
 }
 
-Expression parseExpression(Context context) {
+dynamic parseExpression(pp.Parser parser, Context context) {
   final startPosition = context.pos;
 
   int expectEndOfExpr = 0;
@@ -247,11 +248,10 @@ Expression parseExpression(Context context) {
         expectEndOfExpr++;
         break;
       case ")":
-      case "[":
+      case "]":
       case "{":
         expectEndOfExpr--;
         break;
-      case " ":
       case "\n":
         if (expectEndOfExpr <= 0) {
           break loop;
@@ -260,7 +260,7 @@ Expression parseExpression(Context context) {
     context.pos++;
   }
 
-  final result = expressionParser.parseOn(pp.Context(
+  final result = parser.parseOn(pp.Context(
     context.buffer.substring(startPosition, context.pos),
     0,
   ));
@@ -269,7 +269,14 @@ Expression parseExpression(Context context) {
     context.fail(result.message, startPosition + result.position);
   }
 
-  assert(context.pos == startPosition + result.position);
+  if (context.pos > startPosition + result.position) {
+    context.fail(
+        "Unexpected end of expression", startPosition + result.position);
+  }
+
+  if (context.pos < startPosition + result.position) {
+    context.fail("End of expression expected", startPosition + result.position);
+  }
 
   return result.value;
 }

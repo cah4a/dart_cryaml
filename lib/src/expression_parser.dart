@@ -17,18 +17,25 @@ class _ExpressionGrammar extends GrammarDefinition {
   Parser expression() => ref(node).separatedBy(operations).map(parseExpression);
 
   Parser node() =>
-      literals | variable | stringToken | numberToken | ref(call) | array;
+      literals |
+      variable |
+      stringToken |
+      numberToken |
+      ref(call) |
+      ref(array) |
+      ref(group);
 
-  final literals = literal(null) | literal(false) | literal(true);
+  Parser group() =>
+      (char("(") & ref(expression) & char(")")).map((match) => match[1]);
 
-  Parser get array => (char("[") &
-          ref(node)
+  Parser array() => (char("[").trim() &
+          ref(expression)
               .separatedBy(
                 char(",").trim(),
                 includeSeparators: false,
               )
               .optional() &
-          char("]"))
+          char("]").trim())
       .map(parseArray);
 
   Parser call() => (funcNameToken.trim() &
@@ -38,19 +45,21 @@ class _ExpressionGrammar extends GrammarDefinition {
           char(")").trim())
       .map(parseCall);
 
-  Parser positionalArguments() => ref(node).separatedBy(
+  Parser positionalArguments() => ref(expression).separatedBy(
         char(",").trim(),
         includeSeparators: false,
+        optionalSeparatorAtEnd: true,
       );
 
   Parser namedArguments() => ref(named)
       .separatedBy(
         char(",").trim(),
         includeSeparators: false,
+        optionalSeparatorAtEnd: true,
       )
       .map(parseNamedArgs);
 
-  Parser named() => argNameToken & char(":").trim() & ref(node);
+  Parser named() => argNameToken & char(":").trim() & ref(expression);
 }
 
 Parser literal<T>(T constant) => string(constant.toString())
@@ -74,6 +83,8 @@ final keywordToken = keyword("Keyword expected");
 final funcNameToken = keyword("function name expected");
 
 final argNameToken = keyword("argument name expected");
+
+final literals = literal(null) | literal(false) | literal(true);
 
 final variable = (char(r"$") & letter() & pattern("A-Za-z0-9_").plus())
     .flatten("Variable expected")
@@ -174,4 +185,17 @@ Expression parseExpression(List each) {
   }
 
   return BinaryExpression(each[0], each[1], each[2]);
+}
+
+class _ExpressionParser extends Parser {
+  const _ExpressionParser();
+
+  @override
+  Parser copy() {
+    // TODO: implement copy
+    return null;
+  }
+
+  @override
+  Result parseOn(Context context) {}
 }
