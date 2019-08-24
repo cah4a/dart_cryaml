@@ -1,12 +1,13 @@
 version: 2
-  jobs:
-    build:
-      docker:
-          - image: google/dart:stable
 
-      steps:
-        - checkout
+jobs:
+  build:
+    docker:
+        - image: google/dart
 
-        - run: pub get
-        - run: pub run test_coverage
-        - run: export CODECOV_TOKEN="0e57b4da-fe83-4485-af13-87b30165cf99" && bash <(curl -s https://codecov.io/bash)
+    steps:
+      - checkout
+
+      - run: pub get
+      - run: pub run test_coverage
+      - run: export CODECOV_TOKEN="0e57b4da-fe83-4485-af13-87b30165cf99" && bash <(curl -s https://codecov.io/bash)
