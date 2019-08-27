@@ -22,11 +22,17 @@ class CrYAMLList extends DelegatingList implements CrYAMLNode {
 }
 
 class CrYAMLDirectiveNode implements CrYAMLNode {
-  final String node;
+  final String name;
   final List arguments;
-  final dynamic children;
+  final CrYAMLNode document;
+  final List<CrYAMLDirectiveNode> children;
 
-  CrYAMLDirectiveNode(this.node, this.arguments, this.children);
+  CrYAMLDirectiveNode(
+    this.name,
+    this.arguments,
+    this.document,
+    this.children,
+  );
 
   @override
   dynamic evaluate(CrYAMLContext context) {}

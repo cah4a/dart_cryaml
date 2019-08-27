@@ -4,26 +4,26 @@ import 'package:cryaml/src/token.dart';
 import 'package:test/test.dart';
 
 main() {
-  final parser = Tokenizer();
+  final tokenizer = Tokenizer();
 
   group("simplest", () {
     test("empty", () {
       expect(
-        parser.tokenize(""),
+        tokenizer.tokenize(""),
         [],
       );
     });
 
     test("empty spaces", () {
       expect(
-        parser.tokenize("  \n\n   \t"),
+        tokenizer.tokenize("  \n\n   \t"),
         [],
       );
     });
 
     test("int", () {
       expect(
-        parser.tokenize("1"),
+        tokenizer.tokenize("1"),
         [
           Token.expr(LiteralExpression<int>(1)),
         ],
@@ -32,7 +32,7 @@ main() {
 
     test("double", () {
       expect(
-        parser.tokenize("3.14"),
+        tokenizer.tokenize("3.14"),
         [
           Token.expr(LiteralExpression<double>(3.14)),
         ],
@@ -41,7 +41,7 @@ main() {
 
     test("string", () {
       expect(
-        parser.tokenize('"foo"'),
+        tokenizer.tokenize('"foo"'),
         [
           Token.expr(LiteralExpression<String>("foo")),
         ],
@@ -50,11 +50,21 @@ main() {
 
     test("consume indents", () {
       expect(
-        parser.tokenize('\n\n    foo: "bar"'),
+        tokenizer.tokenize('\n\n    foo: "bar"'),
         [
           Token.key("foo"),
           Token.expr(LiteralExpression<String>("bar")),
         ],
+      );
+    });
+
+    test("tabs are not allowed as indentation", () {
+      expect(
+        () => tokenizer.tokenize("\tfoo: 3"),
+        throwsA(
+          TypeMatcher<FormatException>().having((e) => e.message, "message",
+              "Tab characters are not allowed as indentation."),
+        ),
       );
     });
   });
@@ -67,7 +77,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.key("foo"),
           Token.expr(LiteralExpression<String>("value")),
@@ -84,7 +94,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.key("foo"),
           Token.key("bar"),
@@ -97,16 +107,16 @@ main() {
       final source = [
         'foo: "value"',
         //'  ',
-        'bar: "value"',
+        'bar: "value2"',
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.key("foo"),
           Token.expr(LiteralExpression<String>("value")),
           Token.key("bar"),
-          Token.expr(LiteralExpression<String>("value")),
+          Token.expr(LiteralExpression<String>("value2")),
         ],
       );
     });
@@ -119,7 +129,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.key("key"),
           Token.indent,
@@ -141,7 +151,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.key("key"),
           Token.indent,
@@ -166,7 +176,7 @@ main() {
       ].join("\n");
 
       expect(
-        () => parser.tokenize(source),
+        () => tokenizer.tokenize(source),
         throwsA(TypeMatcher<FormatException>()),
       );
     });
@@ -180,7 +190,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.listMark,
           Token.key("foo"),
@@ -192,17 +202,19 @@ main() {
       );
     });
 
-    test("list of strings", () {
+    test("list of strings with non filled values", () {
       final source = [
         '- "foo"',
+        '- ',
         '- "bar"',
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.listMark,
           Token.expr(LiteralExpression<String>("foo")),
+          Token.listMark,
           Token.listMark,
           Token.expr(LiteralExpression<String>("bar")),
         ],
@@ -218,7 +230,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.listMark,
           Token.key("key"),
@@ -229,7 +241,7 @@ main() {
           Token.key("key"),
           Token.expr(LiteralExpression<String>("bar")),
           Token.key("value"),
-          Token.expr(LiteralExpression<Null>(null)),
+          Token.expr(Expression.NULL),
         ],
       );
     });
@@ -242,7 +254,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.key("key"),
           Token.indent,
@@ -266,7 +278,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.key("key"),
           Token.indent,
@@ -297,7 +309,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.key("str"),
           Token.expr(LiteralExpression<String>("string")),
@@ -306,7 +318,7 @@ main() {
           Token.key("double"),
           Token.number(36.6),
           Token.key("null"),
-          Token.expr(LiteralExpression<Null>(null)),
+          Token.expr(Expression.NULL),
         ],
       );
     });
@@ -317,8 +329,23 @@ main() {
       final source = ['@foobar'].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
+          Token.directive("foobar", null),
+        ],
+      );
+    });
+
+    test("oneliners", () {
+      final source = [
+        '@foobar',
+        '@foobar',
+      ].join("\n");
+
+      expect(
+        tokenizer.tokenize(source),
+        [
+          Token.directive("foobar", null),
           Token.directive("foobar", null),
         ],
       );
@@ -331,7 +358,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.directive("foobar", null),
           Token.indent,
@@ -346,7 +373,7 @@ main() {
       final source = ['@foobar 42'].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.directive("foobar", [
             LiteralExpression<int>(42),
@@ -356,13 +383,10 @@ main() {
     });
 
     test("directive with list of expressions", () {
-      final source = [
-        r'@foobar $var in [1, 2,',
-        r'$foo + 5.0]'
-      ].join("\n");
+      final source = [r'@foobar $var in [1, 2,', r'$foo + 5.0]'].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.directive("foobar", [
             VarExpression("var"),
@@ -388,7 +412,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.listMark,
           Token.directive("foobar", null),
@@ -407,7 +431,7 @@ main() {
       ].join("\n");
 
       expect(
-        parser.tokenize(source),
+        tokenizer.tokenize(source),
         [
           Token.directive("foo", [VarExpression("var")]),
           Token.indent,

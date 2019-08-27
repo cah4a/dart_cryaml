@@ -114,8 +114,15 @@ class Context {
 
   Iterable<Token> indentation() sync* {
     final startPos = pos;
-    grabTo(RegExp(r"\S|$|\n"), "Dedent expected");
+    final indent = grabTo(RegExp(r"\S|$|\n"), "Dedent expected");
     final isListMark = !isEnd && char == "-";
+
+    if (indent.contains("\t")) {
+      fail(
+        "Tab characters are not allowed as indentation.",
+        startPos + indent.indexOf("\t"),
+      );
+    }
 
     final newIndent = pos - startPos;
     int listMarkIndent;
@@ -145,7 +152,7 @@ class Context {
   }
 
   fail(String message, [int position]) {
-    throw CrYAMLException(message, buffer, position ?? pos);
+    throw FormatException(message, buffer, position ?? pos);
   }
 
   Iterable<Token> execute() sync* {
@@ -204,10 +211,12 @@ Iterable<Token> directive(Context context) sync* {
   context.trim();
 
   final args = parseExpression(
-    (expressionParser | keywordToken).separatedBy(
-      pp.char(" ").plus(),
-      includeSeparators: false,
-    ).optional(),
+    (expressionParser | keywordToken)
+        .separatedBy(
+          pp.char(" ").plus(),
+          includeSeparators: false,
+        )
+        .optional(),
     context,
   );
 
@@ -229,7 +238,10 @@ Iterable<Token> objectValue(Context context) sync* {
 }
 
 Iterable<Token> expression(Context context) sync* {
-  yield Token.expr(parseExpression(expressionParser, context));
+  final expression = parseExpression(expressionParser, context);
+  if (expression != null) {
+    yield Token.expr(expression);
+  }
   context.state = start;
   context.ensureNewLine();
 }
@@ -260,8 +272,14 @@ dynamic parseExpression(pp.Parser parser, Context context) {
     context.pos++;
   }
 
+  final source = context.buffer.substring(startPosition, context.pos);
+
+  if (source.trim().isEmpty) {
+    return null;
+  }
+
   final result = parser.parseOn(pp.Context(
-    context.buffer.substring(startPosition, context.pos),
+    source,
     0,
   ));
 

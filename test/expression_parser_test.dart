@@ -8,7 +8,7 @@ dynamic parse(String value) {
   final result = expressionParser.parse(value);
 
   if (result.isFailure) {
-    throw CrYAMLException(result.message, result.buffer, result.position);
+    throw FormatException(result.message, result.buffer, result.position);
   }
 
   return result.value;

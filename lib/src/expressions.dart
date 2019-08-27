@@ -1,11 +1,17 @@
 import 'utils.dart';
 
-class Expression<T> {}
+class Expression<T> {
+  static const NULL = LiteralExpression<Null>(null);
+  static const TRUE = LiteralExpression<bool>(true);
+  static const FALSE = LiteralExpression<bool>(false);
+
+  const Expression();
+}
 
 class LiteralExpression<T> extends Expression<T> {
   final T value;
 
-  LiteralExpression(this.value);
+  const LiteralExpression(this.value);
 
   @override
   bool operator ==(Object other) =>

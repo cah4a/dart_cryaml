@@ -8,6 +8,7 @@ void main() {
         'foo: "1"',
         'bar: 3.14',
         'bar: 2',
+        'buz:',
         'baz: null',
       ].join("\n"),
       null,
@@ -16,6 +17,7 @@ void main() {
     expect(cryaml.evaluate({}), {
       "foo": "1",
       "bar": 2,
+      "buz": null,
       "baz": null,
     });
   });
@@ -41,7 +43,10 @@ void main() {
   test('lists', () {
     final cryaml = loadCrYAML(
       [
-        r'- foo: 1',
+        r'- foo:',
+        r'',
+        r'',
+        r'',
         r'- foo: $var',
       ].join("\n"),
       null,
@@ -50,7 +55,7 @@ void main() {
     expect(
       cryaml.evaluate({"var": 3}),
       [
-        {"foo": 1},
+        {"foo": null},
         {"foo": 3},
       ],
     );

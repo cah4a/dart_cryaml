@@ -1,4 +1,5 @@
 import 'package:cryaml/src/expressions.dart';
+import 'package:cryaml/src/nodes.dart';
 import 'package:cryaml/src/parser.dart';
 import 'package:cryaml/src/token.dart';
 import 'package:test/test.dart';
@@ -17,19 +18,12 @@ void main() {
 
       expect(result, LiteralExpression<int>(1));
     });
-
-    test('directive', () {
-      final result = Parser().parse([
-        Token.directive("foo", []),
-      ]);
-
-      expect(result, Token.directive("foo", []));
-    });
   });
 
   group('arrays', () {
     test('array of expressions', () {
       final result = Parser().parse([
+        Token.listMark,
         Token.listMark,
         Token.expr(LiteralExpression<int>(1)),
         Token.listMark,
@@ -37,12 +31,13 @@ void main() {
       ]);
 
       expect(result, [
+        Expression.NULL,
         LiteralExpression<int>(1),
         VarExpression("bar"),
       ]);
     });
 
-    test('array of hash', () {
+    test('array of onliner map', () {
       final result = Parser().parse([
         Token.listMark,
         Token.key("foo"),
@@ -57,11 +52,11 @@ void main() {
       );
     });
 
-    test('array of objects', () {
+    test('array of map', () {
       final result = Parser().parse([
         Token.listMark,
         Token.key("foo"),
-        Token.expr(LiteralExpression<int>(1)),
+        Token.listMark,
         Token.key("bar"),
         Token.expr(LiteralExpression<int>(2)),
         Token.listMark,
@@ -72,9 +67,62 @@ void main() {
       ]);
 
       expect(result, [
-        {"foo": LiteralExpression<int>(1), "bar": LiteralExpression<int>(2)},
-        {"foo": LiteralExpression<int>(3), "baz": LiteralExpression<int>(4)},
+        {
+          "foo": Expression.NULL,
+        },
+        {
+          "bar": LiteralExpression<int>(2),
+        },
+        {
+          "foo": LiteralExpression<int>(3),
+          "baz": LiteralExpression<int>(4),
+        },
       ]);
+    });
+
+    test('array of mixed expressions ands maps', () {
+      final result = Parser().parse([
+        Token.listMark,
+        Token.expr(LiteralExpression<int>(1)),
+        Token.listMark,
+        Token.key("baz"),
+      ]);
+
+      expect(result, [
+        LiteralExpression<int>(1),
+        {"baz": Expression.NULL},
+      ]);
+    });
+
+    test('array of maps with nested values', () {
+      final result = Parser().parse([
+        Token.key("key"),
+        Token.indent,
+        Token.listMark,
+        Token.key("some"),
+        Token.expr(LiteralExpression<String>("foo")),
+        Token.key("other"),
+        Token.indent,
+        Token.listMark,
+        Token.expr(LiteralExpression<String>("bar")),
+        Token.dedent,
+        Token.listMark,
+        Token.key("kuz"),
+        Token.expr(LiteralExpression<String>("baz")),
+        Token.dedent,
+      ]);
+
+      expect(result, {
+        'key': [
+          {
+            'some': LiteralExpression<String>("foo"),
+            'other': [LiteralExpression<String>("bar")]
+          },
+          {
+            "kuz": LiteralExpression<String>("baz"),
+          }
+        ]
+      });
     });
   });
 
@@ -82,13 +130,12 @@ void main() {
     test('simle object', () {
       final result = Parser().parse([
         Token.key("foo"),
-        Token.expr(LiteralExpression<int>(1)),
         Token.key("bar"),
         Token.expr(VarExpression("bar")),
       ]);
 
       expect(result, {
-        'foo': LiteralExpression<int>(1),
+        'foo': Expression.NULL,
         'bar': VarExpression("bar"),
       });
     });
@@ -129,6 +176,137 @@ void main() {
           LiteralExpression<int>(2),
         ]
       });
+    });
+  });
+
+  group('directives', () {
+    test("arguments", () {
+      final arguments = [Object()];
+
+      final result = Parser().parse([
+        Token.directive("foobar", arguments),
+      ]);
+
+      expect(
+        result,
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foobar")
+            .having((node) => node.arguments, "arguments", arguments)
+            .having((node) => node.document, "document", null)
+            .having((node) => node.children, "children", null),
+      );
+    });
+
+    test("map document", () {
+      final arguments = [Object()];
+      final object = Object();
+
+      final result = Parser().parse([
+        Token.directive("foobar", arguments),
+        Token.indent,
+        Token.key("foo"),
+        Token.expr(LiteralExpression<Object>(object)),
+        Token.dedent,
+      ]);
+
+      final document = {
+        "foo": LiteralExpression<Object>(object),
+      };
+
+      expect(
+        result,
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foobar")
+            .having((node) => node.arguments, "arguments", arguments)
+            .having((node) => node.document, "document", document)
+            .having((node) => node.children, "children", null),
+      );
+    });
+
+    test("list document", () {
+      final result = Parser().parse([
+        Token.directive('foobar', null),
+        Token.indent,
+        Token.listMark,
+        Token.expr(LiteralExpression<int>(1)),
+        Token.listMark,
+        Token.expr(LiteralExpression<int>(2)),
+        Token.dedent,
+      ]);
+
+      expect(
+        result,
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foobar")
+            .having((node) => node.document, "document", [
+          LiteralExpression<int>(1),
+          LiteralExpression<int>(2),
+        ]),
+      );
+    });
+
+    test("map document with child directives", () {
+      final result = Parser().parse([
+        Token.directive('foobar', null),
+        Token.indent,
+        Token.key("value"),
+        Token.expr(LiteralExpression<int>(1)),
+        Token.directive('foo', null),
+        Token.directive('bar', null),
+        Token.dedent,
+      ]);
+
+      final children = [
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foo"),
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "bar"),
+      ];
+
+      final document = {
+        "value": LiteralExpression<int>(1),
+      };
+
+      expect(
+        result,
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foobar")
+            .having((node) => node.arguments, "arguments", null)
+            .having((node) => node.document, "document", document)
+            .having((node) => node.children, "children", children),
+      );
+    });
+
+    test("list document with child directives", () {
+      final result = Parser().parse([
+        Token.directive('foobar', null),
+        Token.indent,
+        Token.listMark,
+        Token.expr(LiteralExpression<int>(42)),
+        Token.directive('foo', null),
+        Token.directive('bar', null),
+        Token.dedent,
+      ]);
+
+      final children = [
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foo"),
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "bar"),
+      ];
+
+      final document = [
+        LiteralExpression<int>(42),
+      ];
+
+      expect(
+        result,
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foobar")
+            .having((node) => node.arguments, "arguments", null)
+            .having((node) => node.document, "document", document)
+            .having((node) => node.children, "children", children),
+      );
     });
   });
 }
