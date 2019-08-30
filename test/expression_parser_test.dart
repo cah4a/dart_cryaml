@@ -95,6 +95,13 @@ void main() {
     );
   });
 
+  test('namespace call', () {
+    expect(
+      parse('prefix.foobar()'),
+      CallExpression("prefix.foobar"),
+    );
+  });
+
   test('call combined arguments', () {
     expect(
       parse('foobar(1, answer: 42)'),

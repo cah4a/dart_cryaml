@@ -85,13 +85,16 @@ final characterUnicode = string('\\u') & pattern('0-9A-Fa-f').times(4);
 
 final keywordToken = keyword("Keyword expected");
 
-final funcNameToken = keyword("function name expected");
+final funcNameToken = (letter() & pattern("A-Za-z0-9_").plus())
+    .separatedBy(char("."))
+    .flatten("function name expected");
 
 final argNameToken = keyword("argument name expected");
 
 final literals = literal(null) | literal(false) | literal(true);
 
-final commentToken = char("#").trim() & Token.newlineParser().neg().star().trim();
+final commentToken =
+    char("#").trim() & Token.newlineParser().neg().star().trim();
 
 final variable = (char(r"$") & letter() & pattern("A-Za-z0-9_").plus())
     .flatten("Variable expected")
