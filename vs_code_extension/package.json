@@ -1,0 +1,25 @@
+{
+    "name": "cryaml",
+    "displayName": "CrYAML",
+    "description": "CrYAML support",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.37.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "cryaml",
+            "aliases": ["CrYAML", "cryaml"],
+            "extensions": [".cryaml"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "cryaml",
+            "scopeName": "source.cryaml",
+            "path": "./syntaxes/cryaml.tmLanguage.json"
+        }]
+    }
+}
