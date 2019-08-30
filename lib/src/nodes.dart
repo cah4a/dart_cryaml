@@ -29,7 +29,7 @@ typedef Eval<T> = T Function([CrYAMLContext context]);
 class CrYAMLDirectiveNode implements CrYAMLNode {
   final String name;
   final List arguments;
-  final CrYAMLNode document;
+  final dynamic document;
   final CrYAMLList<CrYAMLDirectiveNode> children;
 
   CrYAMLDirectiveNode(

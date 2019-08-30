@@ -7,9 +7,9 @@ class Parser {
     final iterator = _Iterator(tokens.iterator);
     final result = _parse(iterator);
 
-//    if (iterator.moveNext()) {
-//      throw FormatException("Found several CrYAML documents");
-//    }
+    if (iterator.moveNext()) {
+      throw FormatException("Found several CrYAML documents");
+    }
 
     return result;
   }
@@ -47,7 +47,7 @@ CrYAMLDirectiveNode _directive(
   DirectiveToken token,
   _Iterator<Token> iterator,
 ) {
-  CrYAMLNode document;
+  var document;
   CrYAMLList<CrYAMLDirectiveNode> children;
 
   if (iterator.hasNext() && iterator.next is IndentToken) {
@@ -55,6 +55,10 @@ CrYAMLDirectiveNode _directive(
 
     if (iterator.hasNext() && iterator.next is! DirectiveToken) {
       document = _parse(iterator, until: (token) => token is DirectiveToken);
+    }
+
+    if (iterator.current is ExpressionToken) {
+      iterator.moveNext();
     }
 
     while (iterator.current is DirectiveToken) {

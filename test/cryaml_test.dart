@@ -1,8 +1,18 @@
 import 'package:cryaml/cryaml.dart';
+import 'package:cryaml/src/exceptions.dart';
 import 'package:test/test.dart';
 
 void main() {
   group('basic', () {
+    test('expression', () {
+      final cryaml = loadCrYAML(r"$int * 2");
+
+      expect(
+        cryaml.evaluate({"int": 3}),
+        6,
+      );
+    });
+
     test('map', () {
       final cryaml = loadCrYAML(
         [
@@ -165,6 +175,32 @@ void main() {
       );
     });
 
+    test('expression document', () {
+      final object = Object();
+
+      final specification = Specification(
+        directives: {
+          "foobar": _CrYAMLDirective(
+            const DirectiveSpec(documentType: DocumentType.expression),
+            (ctx, {document()}) => document(),
+          ),
+        },
+      );
+
+      final cryaml = loadCrYAML(
+        [
+          r'@foobar',
+          r'  3 + 5',
+        ].join("\n"),
+        specification,
+      );
+
+      expect(
+        cryaml.evaluate({}),
+        8,
+      );
+    });
+
     test('directive as key value', () {
       final object = Object();
 
@@ -294,6 +330,44 @@ void main() {
           o1,
           o2,
         ],
+      );
+    });
+  });
+
+  group('errors', () {
+    final sources = {
+      "expressions": "\$int * 2\n2+2",
+      "documents": "foo: bar\n- list",
+    };
+
+    sources.forEach((type, source) {
+      test('several $type', () {
+        expect(
+          () => loadCrYAML(source),
+          throwsA(TypeMatcher<FormatException>()),
+        );
+      });
+    });
+
+    test("wrong directive call method", () {
+      final spec = Specification(
+        directives: {
+          "foobar": _CrYAMLDirective(
+            DirectiveSpec(arguments: [ArgumentType.expression]),
+            () => null,
+          ),
+        },
+      );
+
+      expect(
+        () => loadCrYAML("@foobar 2", spec).evaluate({}),
+        throwsA(
+          TypeMatcher<CrYAMLEvaluateException>().having(
+            (e) => e.message,
+            "message",
+            "_CrYAMLDirective should implement call(CrYAMLContext context, arg0) method",
+          ),
+        ),
       );
     });
   });

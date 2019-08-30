@@ -1,15 +1,16 @@
 import 'package:cryaml/src/expression_parser.dart';
 import 'package:cryaml/src/expressions.dart';
+import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
 dynamic parse(String value) {
-  final result = expressionParser.parse(value);
+  final result = (expressionParser & endOfInput()).parse(value);
 
   if (result.isFailure) {
     throw FormatException(result.message, result.buffer, result.position);
   }
 
-  return result.value;
+  return result.value.first;
 }
 
 void main() {
@@ -32,6 +33,13 @@ void main() {
   test('number', () {
     expect(parse('100500'), LiteralExpression(100500));
     expect(parse('36.6'), LiteralExpression(36.6));
+  });
+
+  test('empty array', () {
+    expect(
+      parse('[  ]'),
+      ArrayExpression([]),
+    );
   });
 
   test('array', () {
@@ -58,14 +66,14 @@ void main() {
 
   test('call', () {
     expect(
-      parse('foobar()'),
+      parse('foobar( )'),
       CallExpression("foobar"),
     );
   });
 
   test('call positional args', () {
     expect(
-      parse('foobar(1, true)'),
+      parse('foobar( 1, true )'),
       CallExpression("foobar", [
         LiteralExpression<int>(1),
         LiteralExpression<bool>(true),
@@ -171,12 +179,52 @@ void main() {
     expect(
       parse("200 \n\n + [\n\n3.0  \t , 7.0 \n\t\t]"),
       BinaryExpression(
-          LiteralExpression<int>(200),
-          "+",
-          ArrayExpression([
-            LiteralExpression<double>(3),
-            LiteralExpression<double>(7),
-          ])),
+        LiteralExpression<int>(200),
+        "+",
+        ArrayExpression([
+          LiteralExpression<double>(3),
+          LiteralExpression<double>(7),
+        ]),
+      ),
+    );
+  });
+
+  test('comments', () {
+    expect(
+      parse("200 # comment"),
+      LiteralExpression<int>(200),
+    );
+
+    expect(
+      parse("[ # comm\n 200, \n 500 \n ]"),
+      ArrayExpression([
+        LiteralExpression<int>(200),
+        LiteralExpression<int>(500),
+      ]),
+    );
+  });
+
+  test('comments in calls', () {
+    expect(
+      parse("foo( # comment\n) # other comment"),
+      CallExpression("foo"),
+    );
+
+    expect(
+      parse("foo( # comment\n 3) # other comment"),
+      CallExpression("foo", [LiteralExpression<int>(3)]),
+    );
+
+    expect(
+      parse("foo( # comment\n "
+          "3, #(123, ]]3\n"
+          "named: 5 #comment\n"
+          ") # other comment"),
+      CallExpression("foo", [
+        LiteralExpression<int>(3)
+      ], {
+        "named": LiteralExpression<int>(5),
+      }),
     );
   });
 }

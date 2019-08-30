@@ -164,7 +164,7 @@ Iterable<Token> begin(Context context) sync* {
 }
 
 Iterable<Token> start(Context context) sync* {
-  context.skip(RegExp(r"[\s\t]*(?:\n|$)"));
+  context.skip(RegExp(r"[\s\t]*(?:#.*?)?(?:\n|$)"));
 
   yield* context.indentation();
 
@@ -224,6 +224,14 @@ Iterable<Token> directive(Context context) sync* {
 }
 
 Iterable<Token> objectValue(Context context) sync* {
+  if (context.char == "#") {
+    context.grabTo(RegExp(r"\n|$"), "Expect new line");
+  }
+
+  if (context.isEnd) {
+    return;
+  }
+
   switch (context.char) {
     case "\n":
       context.consumeChar();

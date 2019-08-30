@@ -14,6 +14,13 @@ main() {
       );
     });
 
+    test("only comment", () {
+      expect(
+        tokenizer.tokenize("# empty line"),
+        [],
+      );
+    });
+
     test("empty spaces", () {
       expect(
         tokenizer.tokenize("  \n\n   \t"),
@@ -44,6 +51,23 @@ main() {
         tokenizer.tokenize('"foo"'),
         [
           Token.expr(LiteralExpression<String>("foo")),
+        ],
+      );
+    });
+
+    test("map key with comment", () {
+      expect(
+        tokenizer.tokenize("foo: # empty line"),
+        [Token.key("foo")],
+      );
+
+      expect(
+        tokenizer.tokenize("foo: # empty line\n  bar:"),
+        [
+          Token.key("foo"),
+          Token.indent,
+          Token.key("bar"),
+          Token.dedent,
         ],
       );
     });
@@ -103,11 +127,16 @@ main() {
       );
     });
 
-    test("ignore empty lines", () {
+    test("ignore empty lines and comments", () {
       final source = [
-        'foo: "value"',
+        '# start comment',
+        '',
+        'foo: "value" # other comments',
         '  ',
+        '# comment',
         'bar: "value2"',
+        '',
+        '# end comment',
       ].join("\n");
 
       expect(
@@ -429,7 +458,10 @@ main() {
     });
 
     test("directive with list of expressions", () {
-      final source = [r'@foobar $var in [1, 2,', r'$foo + 5.0]'].join("\n");
+      final source = [
+        r'@foobar $var in [1, 2,',
+        r'$foo + 5.0]',
+      ].join("\n");
 
       expect(
         tokenizer.tokenize(source),

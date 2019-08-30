@@ -14,7 +14,9 @@ final expressionParser = GrammarParser(_ExpressionGrammar());
 class _ExpressionGrammar extends GrammarDefinition {
   Parser start() => ref(expression);
 
-  Parser expression() => ref(node).separatedBy(operations).map(parseExpression);
+  Parser expression() => comment(
+        ref(node).separatedBy(operations).map(parseExpression),
+      );
 
   Parser node() =>
       literals |
@@ -28,32 +30,35 @@ class _ExpressionGrammar extends GrammarDefinition {
   Parser group() =>
       (char("(") & ref(expression) & char(")")).map((match) => match[1]);
 
-  Parser array() => (char("[").trim() &
+  Parser comment(Parser prefix) =>
+      (prefix & commentToken.optional()).map(parseComment);
+
+  Parser array() => (comment(char("[").trim()) &
           ref(expression)
               .separatedBy(
-                char(",").trim(),
+                comment(char(",").trim()),
                 includeSeparators: false,
               )
               .optional() &
-          char("]").trim())
+          comment(char("]").trim()))
       .map(parseArray);
 
-  Parser call() => (funcNameToken.trim() &
-          char("(").trim() &
+  Parser call() => (funcNameToken &
+          comment(char("(") & whitespace().star()) &
           ref(positionalArguments).optional() &
           ref(namedArguments).optional() &
-          char(")").trim())
+          comment(char(")").trim()))
       .map(parseCall);
 
   Parser positionalArguments() => ref(expression).separatedBy(
-        char(",").trim(),
+        comment(char(",").trim()),
         includeSeparators: false,
         optionalSeparatorAtEnd: true,
       );
 
   Parser namedArguments() => ref(named)
       .separatedBy(
-        char(",").trim(),
+        comment(char(",").trim()),
         includeSeparators: false,
         optionalSeparatorAtEnd: true,
       )
@@ -86,6 +91,8 @@ final argNameToken = keyword("argument name expected");
 
 final literals = literal(null) | literal(false) | literal(true);
 
+final commentToken = char("#").trim() & Token.newlineParser().neg().star().trim();
+
 final variable = (char(r"$") & letter() & pattern("A-Za-z0-9_").plus())
     .flatten("Variable expected")
     .map((each) => VarExpression(each.substring(1)));
@@ -115,7 +122,13 @@ Expression parseNumber(each) {
   }
 }
 
+dynamic parseComment(List each) => each.first;
+
 Expression parseArray(List each) {
+  if (each[1] == null) {
+    return ArrayExpression([]);
+  }
+
   return ArrayExpression(each[1].cast<Expression>());
 }
 
