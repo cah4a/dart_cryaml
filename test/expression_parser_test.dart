@@ -1,7 +1,5 @@
-import 'package:cryaml/src/exceptions.dart';
 import 'package:cryaml/src/expression_parser.dart';
 import 'package:cryaml/src/expressions.dart';
-import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
 dynamic parse(String value) {

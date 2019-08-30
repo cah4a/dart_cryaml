@@ -25,7 +25,7 @@ main() {
       expect(
         tokenizer.tokenize("1"),
         [
-          Token.expr(LiteralExpression<int>(1)),
+          Token.number(1),
         ],
       );
     });
@@ -34,7 +34,7 @@ main() {
       expect(
         tokenizer.tokenize("3.14"),
         [
-          Token.expr(LiteralExpression<double>(3.14)),
+          Token.number(3.14),
         ],
       );
     });
@@ -106,7 +106,7 @@ main() {
     test("ignore empty lines", () {
       final source = [
         'foo: "value"',
-        //'  ',
+        '  ',
         'bar: "value2"',
       ].join("\n");
 
@@ -194,10 +194,10 @@ main() {
         [
           Token.listMark,
           Token.key("foo"),
-          Token.expr(LiteralExpression<int>(1)),
+          Token.number(1),
           Token.listMark,
           Token.key("bar"),
-          Token.expr(LiteralExpression<int>(2)),
+          Token.number(2),
         ],
       );
     });
@@ -236,7 +236,7 @@ main() {
           Token.key("key"),
           Token.expr(LiteralExpression<String>("foo")),
           Token.key("value"),
-          Token.expr(LiteralExpression<int>(1)),
+          Token.number(1),
           Token.listMark,
           Token.key("key"),
           Token.expr(LiteralExpression<String>("bar")),
@@ -259,9 +259,9 @@ main() {
           Token.key("key"),
           Token.indent,
           Token.listMark,
-          Token.expr(LiteralExpression<int>(1)),
+          Token.number(1),
           Token.listMark,
-          Token.expr(LiteralExpression<int>(2)),
+          Token.number(2),
           Token.dedent,
         ],
       );
@@ -363,8 +363,54 @@ main() {
           Token.directive("foobar", null),
           Token.indent,
           Token.key("nested"),
-          Token.expr(LiteralExpression<bool>(true)),
+          Token.bool(true),
           Token.dedent,
+        ],
+      );
+    });
+
+    test("directive as key with map body", () {
+      final source = [
+        'foobar: @foobar "foo"',
+        '  nested: @foobar "other"',
+        '  foo: 2',
+      ].join("\n");
+
+      expect(
+        tokenizer.tokenize(source),
+        [
+          Token.key("foobar"),
+          Token.directive("foobar", [LiteralExpression("foo")]),
+          Token.indent,
+          Token.key("nested"),
+          Token.directive("foobar", [LiteralExpression("other")]),
+          Token.key("foo"),
+          Token.number(2),
+          Token.dedent,
+        ],
+      );
+    });
+
+    test("directive as key with list body", () {
+      final source = [
+        'foobar: @foobar "foo"',
+        '  - true',
+        '  - false',
+        'other:'
+      ].join("\n");
+
+      expect(
+        tokenizer.tokenize(source),
+        [
+          Token.key("foobar"),
+          Token.directive("foobar", [LiteralExpression("foo")]),
+          Token.indent,
+          Token.listMark,
+          Token.bool(true),
+          Token.listMark,
+          Token.bool(false),
+          Token.dedent,
+          Token.key("other"),
         ],
       );
     });
@@ -428,6 +474,7 @@ main() {
         r'  key: 1',
         r'',
         r'  @something',
+        r'  @something',
       ].join("\n");
 
       expect(
@@ -436,7 +483,8 @@ main() {
           Token.directive("foo", [VarExpression("var")]),
           Token.indent,
           Token.key("key"),
-          Token.expr(LiteralExpression<int>(1)),
+          Token.number(1),
+          Token.directive("something", null),
           Token.directive("something", null),
           Token.dedent,
         ],

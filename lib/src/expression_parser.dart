@@ -186,16 +186,3 @@ Expression parseExpression(List each) {
 
   return BinaryExpression(each[0], each[1], each[2]);
 }
-
-class _ExpressionParser extends Parser {
-  const _ExpressionParser();
-
-  @override
-  Parser copy() {
-    // TODO: implement copy
-    return null;
-  }
-
-  @override
-  Result parseOn(Context context) {}
-}

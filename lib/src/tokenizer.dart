@@ -1,12 +1,9 @@
 import 'dart:math';
 
-import 'package:cryaml/src/exceptions.dart';
 import 'package:cryaml/src/expression_parser.dart';
 import 'package:cryaml/src/indentator.dart';
 import 'package:cryaml/src/token.dart';
 import 'package:petitparser/petitparser.dart' as pp;
-
-import 'expressions.dart';
 
 /// tokenize cryaml tree
 class Tokenizer {
@@ -232,6 +229,10 @@ Iterable<Token> objectValue(Context context) sync* {
       context.consumeChar();
       context.state = start;
       break;
+    case "@":
+      context.consumeChar();
+      context.state = directive;
+      break;
     default:
       context.state = expression;
   }
@@ -284,16 +285,24 @@ dynamic parseExpression(pp.Parser parser, Context context) {
   ));
 
   if (result.isFailure) {
-    context.fail(result.message, startPosition + result.position);
+    context.fail(
+      "Wrong expression: ${result.message}",
+      startPosition + result.position,
+    );
   }
 
   if (context.pos > startPosition + result.position) {
     context.fail(
-        "Unexpected end of expression", startPosition + result.position);
+      "Unexpected end of expression",
+      startPosition + result.position,
+    );
   }
 
   if (context.pos < startPosition + result.position) {
-    context.fail("End of expression expected", startPosition + result.position);
+    context.fail(
+      "End of expression expected",
+      startPosition + result.position,
+    );
   }
 
   return result.value;

@@ -1,5 +1,4 @@
 import 'package:cryaml/src/indentator.dart';
-import 'package:cryaml/src/token.dart';
 import 'package:test/test.dart';
 
 void main() {

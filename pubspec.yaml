@@ -8,7 +8,7 @@ dependencies:
   petitparser: ^2.3.0
 
 dev_dependencies:
-  test:
-  mockito:
+  test: 1.6.4
+  mockito: 4.1.0
   test_coverage: ^0.3.0
 

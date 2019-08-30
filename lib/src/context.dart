@@ -1,37 +1,54 @@
+import 'package:cryaml/cryaml.dart';
 import 'package:cryaml/src/exceptions.dart';
 import 'package:cryaml/src/expression_evaluator.dart';
 import 'package:cryaml/src/expressions.dart';
 import 'package:cryaml/src/nodes.dart';
-import 'package:meta/meta.dart';
 
-@immutable
-class CrYAMLContext {
+abstract class CrYAMLContext {
+  Specification get specification;
+
+  Map<String, dynamic> get variables;
+
+  factory CrYAMLContext(
+    Specification specification,
+    Map<String, dynamic> variables,
+  ) = _CrYAMLContext;
+
+  dynamic eval(node);
+
+  CrYAMLContext withVariable<T>(String name, T value);
+}
+
+class _CrYAMLContext implements CrYAMLContext {
+  final Specification specification;
   final Map<String, dynamic> variables;
 
   ExpressionEvaluator _evaluator;
 
-  CrYAMLContext(Map<String, dynamic> variables)
+  _CrYAMLContext(this.specification, Map<String, dynamic> variables)
       : assert(variables != null),
         variables = Map.unmodifiable(variables);
 
   dynamic operator [](String name) => variables[name];
 
-  CrYAMLContext withVariable<T>(String name, T value) {
-    return CrYAMLContext({
-      ...variables,
-      name: value,
-    });
-  }
+  CrYAMLContext withVariable<T>(String name, T value) =>
+      _CrYAMLContext(specification, {
+        ...variables,
+        name: value,
+      });
 
   ExpressionEvaluator get evaluator {
     if (_evaluator == null) {
-      _evaluator = createExpressionEvaluator({}, variables);
+      _evaluator = createExpressionEvaluator(
+        specification.functions,
+        variables,
+      );
     }
 
     return _evaluator;
   }
 
-  eval(node) {
+  dynamic eval(node) {
     if (node is Expression) {
       return evaluator(node);
     }

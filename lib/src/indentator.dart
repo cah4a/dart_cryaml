@@ -1,7 +1,5 @@
 import 'dart:collection';
 
-import 'package:cryaml/src/token.dart';
-
 enum Indentation {
   indent,
   dedent,

@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:cryaml/src/expressions.dart';
 
 typedef dynamic ExpressionEvaluator(Expression expression);

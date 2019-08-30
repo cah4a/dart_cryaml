@@ -1,22 +1,33 @@
 library cryaml;
 
-import 'package:cryaml/src/directive_declarations.dart';
-import 'package:cryaml/src/executor.dart';
+import 'package:cryaml/src/context.dart';
 import 'package:cryaml/src/parser.dart';
+import 'package:cryaml/src/specification.dart';
 import 'package:cryaml/src/tokenizer.dart';
 
-CrYAMLDocument loadCrYAML(String source, CrYAMLDeclarations declarations) {
-  final tokens = Tokenizer().tokenize(source);
-  final intermediate = Parser().parse(tokens);
-  return CrYAMLDocument(intermediate);
+export 'package:cryaml/src/context.dart';
+export 'package:cryaml/src/specification.dart';
+
+CrYAMLDocument loadCrYAML(String source, [Specification specification]) {
+  final tokens = Tokenizer().tokenize(source).toList();
+  final intermediate = Parser().parse(tokens, source: source);
+  return _CrYAMLDocument(
+    specification ?? const Specification(),
+    intermediate,
+  );
 }
 
-class CrYAMLDocument {
+abstract class CrYAMLDocument {
+  dynamic evaluate([Map<String, dynamic> variables = const {}]);
+}
+
+class _CrYAMLDocument extends CrYAMLDocument {
+  final Specification specification;
   final dynamic intermediate;
 
-  CrYAMLDocument(this.intermediate);
+  _CrYAMLDocument(this.specification, this.intermediate);
 
-  dynamic evaluate(Map<String, dynamic> variables) {
-    return CrYAMLContext(variables).eval(intermediate);
+  dynamic evaluate([Map<String, dynamic> variables = const {}]) {
+    return CrYAMLContext(specification, variables).eval(intermediate);
   }
 }

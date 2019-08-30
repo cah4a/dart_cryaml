@@ -1,6 +1,27 @@
+import 'dart:math';
+
 import 'package:cryaml/src/expression_evaluator.dart';
 import 'package:cryaml/src/expressions.dart';
 import 'package:test/test.dart';
+
+final operations = {
+  '*': (l, r) => l * r,
+  '/': (l, r) => l / r,
+  '%': (l, r) => l % r,
+  '+': (l, r) => l + r,
+  '-': (l, r) => l - r,
+  '<<': (l, r) => l << r,
+  '>>': (l, r) => l >> r,
+  '<': (l, r) => l < r,
+  '<=': (l, r) => l <= r,
+  '>': (l, r) => l > r,
+  '>=': (l, r) => l >= r,
+  '==': (l, r) => l == r,
+  '!=': (l, r) => l != r,
+  '&': (l, r) => l & r,
+  '^': (l, r) => l ^ r,
+  '|': (l, r) => l | r,
+};
 
 void main() {
   test('LiteralExpression', () {
@@ -102,6 +123,58 @@ void main() {
         VarExpression("var"),
       ])),
       [1, 1.2, object],
+    );
+  });
+
+  final random = Random();
+
+  operations.forEach(
+    (operation, func) => test('Binary $operation operation', () {
+          final eval = createExpressionEvaluator({}, {});
+
+          final l = random.nextInt(1000);
+          final r = random.nextInt(1000);
+
+          expect(
+            eval(BinaryExpression(
+              LiteralExpression<int>(l),
+              operation,
+              LiteralExpression<int>(r),
+            )),
+            func(l, r),
+          );
+        }),
+  );
+
+  test('Binary && operation', () {
+    final eval = createExpressionEvaluator({}, {});
+
+    final l = random.nextBool();
+    final r = random.nextBool();
+
+    expect(
+      eval(BinaryExpression(
+        LiteralExpression<bool>(l),
+        '&&',
+        LiteralExpression<bool>(r),
+      )),
+      l && r,
+    );
+  });
+
+  test('Binary || operation', () {
+    final eval = createExpressionEvaluator({}, {});
+
+    final l = random.nextBool();
+    final r = random.nextBool();
+
+    expect(
+      eval(BinaryExpression(
+        LiteralExpression<bool>(l),
+        '||',
+        LiteralExpression<bool>(r),
+      )),
+      l || r,
     );
   });
 }

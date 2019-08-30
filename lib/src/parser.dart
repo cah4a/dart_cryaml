@@ -3,13 +3,13 @@ import 'package:cryaml/src/nodes.dart';
 import 'package:cryaml/src/token.dart';
 
 class Parser {
-  dynamic parse(Iterable<Token> tokens) {
+  dynamic parse(Iterable<Token> tokens, {String source}) {
     final iterator = _Iterator(tokens.iterator);
     final result = _parse(iterator);
 
-    if (iterator.moveNext()) {
-      throw FormatException("Found several CrYAML documents");
-    }
+//    if (iterator.moveNext()) {
+//      throw FormatException("Found several CrYAML documents");
+//    }
 
     return result;
   }
@@ -29,32 +29,7 @@ dynamic _parse(_Iterator<Token> iterator, {bool until(Token)}) {
 
   if (token is DirectiveToken) {
     iterator.moveNext();
-
-    CrYAMLNode document;
-    List<CrYAMLDirectiveNode> children;
-
-    if (iterator.hasNext() && iterator.next is IndentToken) {
-      iterator.moveNext();
-      document = _parse(iterator, until: (token) => token is DirectiveToken);
-
-      while (iterator.current is DirectiveToken) {
-        children ??= [];
-        children.add(_parse(iterator));
-      }
-
-      if (iterator.current is DedentToken) {
-        iterator.moveNext();
-      } else {
-        throw FormatException("Unexpected document");
-      }
-    }
-
-    return CrYAMLDirectiveNode(
-      token.name,
-      token.arguments,
-      document,
-      children,
-    );
+    return _directive(token, iterator);
   }
 
   if (token is KeyToken) {
@@ -68,11 +43,47 @@ dynamic _parse(_Iterator<Token> iterator, {bool until(Token)}) {
   throw FormatException("Unexpected token $token");
 }
 
+CrYAMLDirectiveNode _directive(
+  DirectiveToken token,
+  _Iterator<Token> iterator,
+) {
+  CrYAMLNode document;
+  CrYAMLList<CrYAMLDirectiveNode> children;
+
+  if (iterator.hasNext() && iterator.next is IndentToken) {
+    iterator.moveNext();
+
+    if (iterator.hasNext() && iterator.next is! DirectiveToken) {
+      document = _parse(iterator, until: (token) => token is DirectiveToken);
+    }
+
+    while (iterator.current is DirectiveToken) {
+      children ??= CrYAMLList<CrYAMLDirectiveNode>([]);
+      children.add(_parse(iterator));
+    }
+
+    if (iterator.current is DedentToken) {
+      iterator.moveNext();
+    } else {
+      throw FormatException("Unexpected document");
+    }
+  }
+
+  return CrYAMLDirectiveNode(
+    token.name,
+    token.arguments,
+    document,
+    children,
+  );
+}
+
 Iterable<MapEntry<String, dynamic>> _object(
   _Iterator<Token> iterator, {
   bool until(Token token),
 }) sync* {
-  while (iterator.moveNext()) {
+  bool hasNext = iterator.moveNext();
+
+  while (hasNext) {
     final keyToken = iterator.current;
 
     if (keyToken is DedentToken) {
@@ -93,6 +104,8 @@ Iterable<MapEntry<String, dynamic>> _object(
 
     final valueToken = iterator.next;
 
+    bool couldSkipMoveNext = false;
+
     if (valueToken is IndentToken) {
       iterator.moveNext();
       yield MapEntry(
@@ -104,12 +117,21 @@ Iterable<MapEntry<String, dynamic>> _object(
       yield MapEntry(key, valueToken.expression);
     } else if (valueToken is KeyToken) {
       yield MapEntry(key, Expression.NULL);
+    } else if (valueToken is DirectiveToken) {
+      yield MapEntry(key, _parse(iterator));
+      couldSkipMoveNext = true;
     } else {
       throw FormatException("Unexpected token $valueToken");
     }
 
     if (until != null && iterator.hasNext() && until(iterator.next)) {
       return;
+    }
+
+    if (couldSkipMoveNext && iterator.current is KeyToken) {
+      // skip move net
+    } else {
+      hasNext = iterator.moveNext();
     }
   }
 }

@@ -245,6 +245,63 @@ void main() {
       );
     });
 
+    test("child directives", () {
+      final result = Parser().parse([
+        Token.directive('foobar', null),
+        Token.indent,
+        Token.directive('foo', null),
+        Token.directive('bar', null),
+        Token.dedent,
+      ]);
+
+      final children = [
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foo"),
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "bar"),
+      ];
+
+      expect(
+        result,
+        TypeMatcher<CrYAMLDirectiveNode>()
+            .having((node) => node.name, "name", "foobar")
+            .having((node) => node.arguments, "arguments", null)
+            .having((node) => node.document, "document", null)
+            .having((node) => node.children, "children", children),
+      );
+    });
+
+    test("child directives as key", () {
+      final result = Parser().parse([
+        Token.key("first"),
+        Token.directive('foobar', null),
+        Token.indent,
+        Token.listMark,
+        Token.bool(true),
+        Token.listMark,
+        Token.bool(false),
+        Token.dedent,
+        Token.key("other"),
+      ]);
+
+      final document = [
+        Expression.TRUE,
+        Expression.FALSE,
+      ];
+
+      expect(
+        result,
+        {
+          "first": TypeMatcher<CrYAMLDirectiveNode>()
+              .having((node) => node.name, "name", "foobar")
+              .having((node) => node.arguments, "arguments", null)
+              .having((node) => node.document, "document", document)
+              .having((node) => node.children, "children", null),
+          "other": LiteralExpression<Null>(null),
+        },
+      );
+    });
+
     test("map document with child directives", () {
       final result = Parser().parse([
         Token.directive('foobar', null),
