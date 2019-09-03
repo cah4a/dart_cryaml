@@ -151,7 +151,8 @@ class CrYAMLDirectiveNode implements CrYAMLNode {
       case DocumentType.map:
       case DocumentType.list:
       case DocumentType.expression:
-        named.add("document");
+      case DocumentType.any:
+        named.add("document()");
         break;
       default:
     }

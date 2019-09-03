@@ -3,7 +3,7 @@ import 'package:cryaml/src/expressions.dart';
 import 'package:petitparser/petitparser.dart';
 import 'package:test/test.dart';
 
-dynamic parse(String value) {
+dynamic parse(String value, {some}) {
   final result = (expressionParser & endOfInput()).parse(value);
 
   if (result.isFailure) {
@@ -44,7 +44,7 @@ void main() {
 
   test('array', () {
     expect(
-      parse('[1, "foo", 3 + 1]'),
+      parse('[1, "foo", 3 + 1, \$var]'),
       ArrayExpression([
         LiteralExpression<int>(1),
         LiteralExpression<String>("foo"),
@@ -53,6 +53,7 @@ void main() {
           "+",
           LiteralExpression<int>(1),
         ),
+        VarExpression("var"),
       ]),
     );
   });

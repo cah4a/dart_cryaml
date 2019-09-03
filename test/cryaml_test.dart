@@ -32,6 +32,21 @@ void main() {
       });
     });
 
+    test('array as key', () {
+      final cryaml = loadCrYAML(
+        [
+          'foo: [1, 2, \$var]',
+        ].join("\n"),
+      );
+
+      expect(
+        cryaml.evaluate({"var": 3}),
+        {
+          "foo": [1, 2, 3],
+        },
+      );
+    });
+
     test('nested maps', () {
       final cryaml = loadCrYAML(
         [
@@ -176,12 +191,10 @@ void main() {
     });
 
     test('expression document', () {
-      final object = Object();
-
       final specification = Specification(
         directives: {
           "foobar": _CrYAMLDirective(
-            const DirectiveSpec(documentType: DocumentType.expression),
+            const DirectiveSpec(documentType: DocumentType.any),
             (ctx, {document()}) => document(),
           ),
         },
@@ -218,7 +231,7 @@ void main() {
           r'key:',
           r'  foo: @foobar',
           r'  bar: @foobar',
-          r'    nested: "map"',
+          r'    nested: [1, 2, $var]',
           r'  other: "bar"',
         ].join("\n"),
         specification,
