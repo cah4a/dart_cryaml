@@ -21,11 +21,47 @@ class _ExpressionGrammar extends GrammarDefinition {
   Parser node() =>
       literals |
       variable |
-      stringToken |
       numberToken |
+      ref(string) |
       ref(call) |
       ref(array) |
       ref(group);
+
+  Parser string() => (char('"') &
+              (interpolateVar() | interpolate() | characterPrimitive).star() &
+              char('"'))
+          .map((each) {
+        final result = <Expression>[];
+        final builder = StringBuffer();
+
+        for (var char in each[1]) {
+          if (char is Expression) {
+            if (builder.isNotEmpty) {
+              result.add(LiteralExpression<String>(builder.toString()));
+              builder.clear();
+            }
+
+            result.add(char);
+          } else {
+            builder.write(char);
+          }
+        }
+
+        if (result.isEmpty) {
+          return LiteralExpression<String>(builder.toString());
+        }
+
+        if (builder.isNotEmpty) {
+          result.add(LiteralExpression<String>(builder.toString()));
+        }
+
+        return InterpolateExpression(result);
+      });
+
+  Parser interpolateVar() => variable;
+
+  Parser interpolate() =>
+      (char("#") & char("{") & ref(node) & char("}")).map((each) => each[2]);
 
   Parser group() =>
       (char("(") & ref(expression) & char(")")).map((match) => match[1]);
@@ -74,13 +110,13 @@ Parser literal<T>(T constant) => string(constant.toString())
 Parser keyword(String message) =>
     (letter() & pattern("A-Za-z0-9_").plus()).flatten(message);
 
-final stringToken = (char('"') & characterPrimitive.star() & char('"'))
-    .map((each) => LiteralExpression<String>(each[1].join()));
-
 final characterPrimitive = characterNormal | characterEscape | characterUnicode;
 
 final characterNormal = pattern('^"\\');
-final characterEscape = char('\\') & pattern(jsonEscapeChars.keys.join());
+final characterEscape =
+    (char('\\') & pattern(jsonEscapeChars.keys.join()).optional()).map(
+  (each) => jsonEscapeChars[each[1]] ?? "",
+);
 final characterUnicode = string('\\u') & pattern('0-9A-Fa-f').times(4);
 
 final keywordToken = keyword("Keyword expected");
@@ -144,7 +180,8 @@ const jsonEscapeChars = {
   'f': '\f',
   'n': '\n',
   'r': '\r',
-  't': '\t'
+  't': '\t',
+  '\$': '\$'
 };
 
 Expression parseCall(List each) {

@@ -31,6 +31,10 @@ ExpressionEvaluator createExpressionEvaluator(
       return expression.children.map(eval).toList();
     }
 
+    if (expression is InterpolateExpression) {
+      return expression.expressions.map(eval).join();
+    }
+
     if (expression is BinaryExpression) {
       final left = eval(expression.left);
       final right = eval(expression.right);
@@ -40,6 +44,8 @@ ExpressionEvaluator createExpressionEvaluator(
           return left * right;
         case '/':
           return left / right;
+        case '~/':
+          return left ~/ right;
         case '%':
           return left % right;
         case '+':

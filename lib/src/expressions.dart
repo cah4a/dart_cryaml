@@ -109,6 +109,37 @@ class CallExpression extends Expression {
   }
 }
 
+class InterpolateExpression extends Expression {
+  final List<Expression> expressions;
+
+  InterpolateExpression(this.expressions);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InterpolateExpression &&
+          runtimeType == other.runtimeType &&
+          leq(expressions, other.expressions);
+
+  @override
+  int get hashCode => expressions.hashCode;
+
+  @override
+  String toString() => expressions.map(
+        (expression) {
+          if (expression is LiteralExpression) {
+            return expression.value;
+          }
+
+          if (expression is VarExpression) {
+            return expression;
+          }
+
+          return "#{$expression}";
+        },
+      ).join();
+}
+
 class BinaryExpression extends Expression {
   final Expression left;
   final String operation;
@@ -120,7 +151,7 @@ class BinaryExpression extends Expression {
   /// see [Order of operations](http://en.wikipedia.org/wiki/Order_of_operations#Programming_language)
   static final operations = {
     // Multiplication, division, modulo
-    '*': 3, '/': 3, '%': 3,
+    '*': 3, '/': 3, '~/': 3, '%': 3,
     // Addition and subtraction
     '+': 4, '-': 4,
     // Bitwise shift left and right

@@ -299,6 +299,35 @@ void main() {
       );
     });
 
+    test('directives array', () {
+      final object = Object();
+
+      final specification = Specification(
+        directives: {
+          "foobar": _CrYAMLDirective(
+            DirectiveSpec(),
+            (ctx) => object,
+          )
+        },
+      );
+      final cryaml = loadCrYAML(
+        [
+          r'key: [',
+          r'  @foobar',
+          r'  @foobar',
+          r']',
+        ].join("\n"),
+        specification,
+      );
+
+      expect(
+        cryaml.evaluate({}),
+        {
+          "key": [object, object],
+        },
+      );
+    }, skip: true);
+
     test('children', () {
       final o1 = Object();
       final o2 = Object();

@@ -30,6 +30,45 @@ void main() {
     expect(parse('"foobarbaz"'), LiteralExpression<String>("foobarbaz"));
   });
 
+  test('escape codes', () {
+    expect(parse(r'"foo \" bar"'), LiteralExpression<String>("foo \" bar"));
+    expect(parse(r'"foo \\"'), LiteralExpression<String>(r"foo \"));
+    expect(parse(r'"foo \n"'), LiteralExpression<String>("foo \n"));
+  });
+
+  test("interpolation", () {
+    expect(
+      parse(r'"some \$var"'),
+      LiteralExpression<String>("some \$var"),
+    );
+
+    expect(
+      parse(r'"foo$var"'),
+      InterpolateExpression([
+        LiteralExpression<String>("foo"),
+        VarExpression("var"),
+      ]),
+    );
+
+    expect(
+      parse(r'"foo#{$var}"'),
+      InterpolateExpression([
+        LiteralExpression<String>("foo"),
+        VarExpression("var"),
+      ]),
+    );
+
+    expect(
+      parse(r'"foo#{foo($var)}"'),
+      InterpolateExpression([
+        LiteralExpression<String>("foo"),
+        CallExpression("foo", [
+          VarExpression("var"),
+        ]),
+      ]),
+    );
+  });
+
   test('number', () {
     expect(parse('100500'), LiteralExpression(100500));
     expect(parse('36.6'), LiteralExpression(36.6));

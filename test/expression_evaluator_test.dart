@@ -7,6 +7,7 @@ import 'package:test/test.dart';
 final operations = {
   '*': (l, r) => l * r,
   '/': (l, r) => l / r,
+  '~/': (l, r) => l ~/ r,
   '%': (l, r) => l % r,
   '+': (l, r) => l + r,
   '-': (l, r) => l - r,
@@ -31,6 +32,22 @@ void main() {
     expect(
       eval(LiteralExpression<Object>(object)),
       object,
+    );
+  });
+
+  test('InterpolateExpression', () {
+    final eval = createExpressionEvaluator(
+      {},
+      {'var': "bar"},
+    );
+
+    expect(
+      eval(InterpolateExpression([
+        LiteralExpression<String>("foo"),
+        VarExpression("var"),
+        LiteralExpression<String>("baz"),
+      ])),
+      'foobarbaz',
     );
   });
 
