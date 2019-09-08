@@ -8,28 +8,28 @@ main() {
 
   group("simplest", () {
     test("empty", () {
-      expect(
+      expectTokens(
         tokenizer.tokenize(""),
         [],
       );
     });
 
     test("only comment", () {
-      expect(
+      expectTokens(
         tokenizer.tokenize("# empty line"),
         [],
       );
     });
 
     test("empty spaces", () {
-      expect(
+      expectTokens(
         tokenizer.tokenize("  \n\n   \t"),
         [],
       );
     });
 
     test("int", () {
-      expect(
+      expectTokens(
         tokenizer.tokenize("1"),
         [
           Token.number(1),
@@ -38,7 +38,7 @@ main() {
     });
 
     test("double", () {
-      expect(
+      expectTokens(
         tokenizer.tokenize("3.14"),
         [
           Token.number(3.14),
@@ -47,7 +47,7 @@ main() {
     });
 
     test("string", () {
-      expect(
+      expectTokens(
         tokenizer.tokenize('"foo"'),
         [
           Token.expr(LiteralExpression<String>("foo")),
@@ -56,24 +56,24 @@ main() {
     });
 
     test("map key with comment", () {
-      expect(
+      expectTokens(
         tokenizer.tokenize("foo: # empty line"),
         [Token.key("foo")],
       );
 
-      expect(
+      expectTokens(
         tokenizer.tokenize("foo: # empty line\n  bar:"),
         [
           Token.key("foo"),
-          Token.indent,
+          Token.indent(20),
           Token.key("bar"),
-          Token.dedent,
+          Token.dedent(24),
         ],
       );
     });
 
     test("consume indents", () {
-      expect(
+      expectTokens(
         tokenizer.tokenize('\n\n    foo: "bar"'),
         [
           Token.key("foo"),
@@ -100,7 +100,7 @@ main() {
         'bar: "value"',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("foo"),
@@ -117,7 +117,7 @@ main() {
         'bar: "value"',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("foo"),
@@ -139,7 +139,7 @@ main() {
         '# end comment',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("foo"),
@@ -157,16 +157,16 @@ main() {
         '    bar: "barval"',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("key"),
-          Token.indent,
+          Token.indent(),
           Token.key("foo"),
           Token.expr(LiteralExpression<String>("fooval")),
           Token.key("bar"),
           Token.expr(LiteralExpression<String>("barval")),
-          Token.dedent,
+          Token.dedent(),
         ],
       );
     });
@@ -179,19 +179,19 @@ main() {
         '  baz: "bazval"',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("key"),
-          Token.indent,
+          Token.indent(),
           Token.key("foo"),
-          Token.indent,
+          Token.indent(),
           Token.key("bar"),
           Token.expr(LiteralExpression<String>("barval")),
-          Token.dedent,
+          Token.dedent(),
           Token.key("baz"),
           Token.expr(LiteralExpression<String>("bazval")),
-          Token.dedent,
+          Token.dedent(),
         ],
       );
     });
@@ -218,13 +218,13 @@ main() {
         '- bar: 2',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
-          Token.listMark,
+          Token.listMark(),
           Token.key("foo"),
           Token.number(1),
-          Token.listMark,
+          Token.listMark(),
           Token.key("bar"),
           Token.number(2),
         ],
@@ -238,13 +238,13 @@ main() {
         '- "bar"',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
-          Token.listMark,
+          Token.listMark(),
           Token.expr(LiteralExpression<String>("foo")),
-          Token.listMark,
-          Token.listMark,
+          Token.listMark(),
+          Token.listMark(),
           Token.expr(LiteralExpression<String>("bar")),
         ],
       );
@@ -258,15 +258,15 @@ main() {
         '  value: null',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
-          Token.listMark,
+          Token.listMark(),
           Token.key("key"),
           Token.expr(LiteralExpression<String>("foo")),
           Token.key("value"),
           Token.number(1),
-          Token.listMark,
+          Token.listMark(),
           Token.key("key"),
           Token.expr(LiteralExpression<String>("bar")),
           Token.key("value"),
@@ -282,16 +282,16 @@ main() {
         '  - 2',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("key"),
-          Token.indent,
-          Token.listMark,
+          Token.indent(),
+          Token.listMark(),
           Token.number(1),
-          Token.listMark,
+          Token.listMark(),
           Token.number(2),
-          Token.dedent,
+          Token.dedent(),
         ],
       );
     });
@@ -306,23 +306,23 @@ main() {
         '  - kuz: "baz"'
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("key"),
-          Token.indent,
-          Token.listMark,
+          Token.indent(),
+          Token.listMark(),
           Token.key("some"),
           Token.expr(LiteralExpression<String>("foo")),
           Token.key("other"),
-          Token.indent,
-          Token.listMark,
+          Token.indent(),
+          Token.listMark(),
           Token.expr(LiteralExpression<String>("bar")),
-          Token.dedent,
-          Token.listMark,
+          Token.dedent(),
+          Token.listMark(),
           Token.key("kuz"),
           Token.expr(LiteralExpression<String>("baz")),
-          Token.dedent,
+          Token.dedent(),
         ],
       );
     });
@@ -337,7 +337,7 @@ main() {
         "null: null",
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("str"),
@@ -357,7 +357,7 @@ main() {
     test("oneliner", () {
       final source = ['@foobar'].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.directive("foobar", null),
@@ -371,7 +371,7 @@ main() {
         '@foobar',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.directive("foobar", null),
@@ -386,14 +386,14 @@ main() {
         '    nested: true',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.directive("foobar", null),
-          Token.indent,
+          Token.indent(),
           Token.key("nested"),
           Token.bool(true),
-          Token.dedent,
+          Token.dedent(),
         ],
       );
     });
@@ -405,17 +405,17 @@ main() {
         '  foo: 2',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("foobar"),
           Token.directive("foobar", [LiteralExpression("foo")]),
-          Token.indent,
+          Token.indent(),
           Token.key("nested"),
           Token.directive("foobar", [LiteralExpression("other")]),
           Token.key("foo"),
           Token.number(2),
-          Token.dedent,
+          Token.dedent(),
         ],
       );
     });
@@ -428,17 +428,17 @@ main() {
         'other:'
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.key("foobar"),
           Token.directive("foobar", [LiteralExpression("foo")]),
-          Token.indent,
-          Token.listMark,
+          Token.indent(),
+          Token.listMark(),
           Token.bool(true),
-          Token.listMark,
+          Token.listMark(),
           Token.bool(false),
-          Token.dedent,
+          Token.dedent(),
           Token.key("other"),
         ],
       );
@@ -447,7 +447,7 @@ main() {
     test("directive with expressions", () {
       final source = ['@foobar 42'].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.directive("foobar", [
@@ -463,7 +463,7 @@ main() {
         r'$foo + 5.0]',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
           Token.directive("foobar", [
@@ -489,13 +489,13 @@ main() {
         r'- @foobar',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
-          Token.listMark,
-          Token.directive("foobar", null),
-          Token.listMark,
-          Token.directive("foobar", null),
+          Token.listMark(0),
+          Token.directive("foobar", null, 2),
+          Token.listMark(10),
+          Token.directive("foobar", null, 12),
         ],
       );
     });
@@ -509,18 +509,99 @@ main() {
         r'  @something',
       ].join("\n");
 
-      expect(
+      expectTokens(
         tokenizer.tokenize(source),
         [
-          Token.directive("foo", [VarExpression("var")]),
-          Token.indent,
-          Token.key("key"),
-          Token.number(1),
-          Token.directive("something", null),
-          Token.directive("something", null),
-          Token.dedent,
+          Token.directive("foo", [VarExpression("var")], 0),
+          Token.indent(12),
+          Token.key("key", 12),
+          Token.number(1, 17),
+          Token.directive("something", null, 22),
+          Token.directive("something", null, 35),
+          Token.dedent(45),
         ],
       );
     });
   });
+}
+
+expectTokens(source, List<Token> tokens) => expect(
+      source,
+      matchTokens(tokens),
+    );
+
+List<Matcher> matchTokens(List<Token> tokens) =>
+    tokens.map(matchToken).toList();
+
+Matcher matchToken(Token token) {
+  if (token is KeyToken) {
+    return MatchKeyToken(token);
+  }
+  if (token is ExpressionToken) {
+    return MatchExpressionToken(token);
+  }
+  if (token is DirectiveToken) {
+    return MatchDirectiveToken(token);
+  }
+  return MatchToken(token);
+}
+
+class MatchToken<T extends Token> extends Matcher {
+  final T token;
+  final matchers = <Matcher, Function>{};
+
+  MatchToken(this.token) {
+    matchers[equals(token.runtimeType)] = (token) => token.runtimeType;
+
+    if (token.pos != null) {
+      matchers[equals(token.pos)] = (Token token) => token.pos;
+    }
+  }
+
+  @override
+  bool matches(covariant Token item, Map matchState) {
+    return matchers.keys.every(
+      (matcher) => matcher.matches(matchers[matcher](item), matchState),
+    );
+  }
+
+  @override
+  Description describe(Description description) {
+    return description.addDescriptionOf(token);
+  }
+
+  @override
+  Description describeMismatch(
+      item, Description mismatchDescription, Map matchState, bool verbose) {
+    return matchers.keys.fold(
+      mismatchDescription.add("Got").addDescriptionOf(item),
+      (mismatchDescription, matcher) => matcher.describeMismatch(
+            matchers[matcher](item),
+            mismatchDescription,
+            matchState,
+            verbose,
+          ),
+    );
+  }
+}
+
+class MatchKeyToken extends MatchToken<KeyToken> {
+  MatchKeyToken(KeyToken token) : super(token) {
+    matchers[equals(token.name)] = (KeyToken token) => token.name;
+  }
+}
+
+class MatchExpressionToken extends MatchToken<ExpressionToken> {
+  MatchExpressionToken(ExpressionToken token) : super(token) {
+    matchers[equals(token.expression)] =
+        (ExpressionToken token) => token.expression;
+  }
+}
+
+class MatchDirectiveToken extends MatchToken<DirectiveToken> {
+  MatchDirectiveToken(DirectiveToken token) : super(token) {
+    matchers[equals(token.name)] = (DirectiveToken token) => token.name;
+    matchers[equals(token.arguments)] =
+        (DirectiveToken token) => token.arguments;
+  }
 }

@@ -8,109 +8,86 @@ final mapEquals = MapEquality().equals;
 abstract class Token {
   final int pos;
 
-  static const indent = IndentToken();
-  static const dedent = DedentToken();
-  static const listMark = ListMarkToken();
-  
-  factory Token.number(num value) {
+  factory Token.indent([int position]) = IndentToken;
+
+  factory Token.dedent([int position]) = DedentToken;
+
+  factory Token.listMark([int position]) = ListMarkToken;
+
+  factory Token.number(num value, [int position]) {
     if (value is double) {
-      return Token.expr(LiteralExpression<double>(value));
+      return Token.expr(LiteralExpression<double>(value), position);
     }
 
-    return Token.expr(LiteralExpression<int>(value));
+    return Token.expr(LiteralExpression<int>(value), position);
   }
 
-  factory Token.string(String value) =>
-      Token.expr(LiteralExpression<String>(value));
+  factory Token.string(String value, [int position]) =>
+      Token.expr(LiteralExpression<String>(value), position);
 
-  factory Token.bool(bool value) => Token.expr(LiteralExpression<bool>(value));
+  factory Token.bool(bool value, [int position]) =>
+      Token.expr(LiteralExpression<bool>(value), position);
 
-  factory Token.key(String name) = KeyToken;
+  factory Token.key(String name, [int position]) = KeyToken;
 
-  factory Token.expr(Expression expression) = ExpressionToken;
+  factory Token.expr(Expression expression, [int position]) = ExpressionToken;
 
-  factory Token.directive(String name, List arguments) = DirectiveToken;
+  factory Token.directive(String name, List arguments, [int position]) =
+      DirectiveToken;
 }
 
 class IndentToken implements Token {
-  final int pos = null;
+  final int pos;
 
-  const IndentToken();
+  const IndentToken([this.pos]);
 
-  String toString() => "indent";
+  String toString() => "indent" + (pos != null ? "[$pos]" : "");
 }
 
 class DedentToken implements Token {
-  final int pos = null;
+  final int pos;
 
-  const DedentToken();
+  const DedentToken([this.pos]);
 
-  String toString() => "dedent";
+  String toString() => "dedent" + (pos != null ? "[$pos]" : "");
 }
 
 class ListMarkToken implements Token {
-  final int pos = null;
+  final int pos;
 
-  const ListMarkToken();
+  const ListMarkToken([this.pos]);
 
-  String toString() => "listMark";
+  String toString() => "listMark" + (pos != null ? "[$pos]" : "");
 }
 
 class KeyToken implements Token {
-  final int pos = null;
+  final int pos;
   final String name;
 
-  KeyToken(this.name);
+  KeyToken(this.name, [this.pos]);
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is KeyToken &&
-          runtimeType == other.runtimeType &&
-          name == other.name;
-
-  @override
-  String toString() => 'key($name)';
-
-  @override
-  int get hashCode => name.hashCode;
+  String toString() => 'key($name)' + (pos != null ? "[$pos]" : "");
 }
 
 class ExpressionToken implements Token {
-  final int pos = null;
+  final int pos;
   final Expression expression;
 
-  ExpressionToken(this.expression);
+  ExpressionToken(this.expression, [this.pos]);
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ExpressionToken &&
-          runtimeType == other.runtimeType &&
-          expression == other.expression;
-
-  @override
-  int get hashCode => expression.hashCode;
-
-  @override
-  String toString() => "exp($expression)";
+  String toString() => "exp($expression)" + (pos != null ? "[$pos]" : "");
 }
 
 class DirectiveToken implements Token {
-  final int pos = null;
+  final int pos;
   final String name;
   final List arguments;
 
-  DirectiveToken(this.name, this.arguments);
+  DirectiveToken(this.name, this.arguments, [this.pos]);
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is DirectiveToken &&
-          runtimeType == other.runtimeType &&
-          name == other.name &&
-          listEquals(arguments, other.arguments);
-
-  @override
-  String toString() => "directive($name, $arguments)";
+  String toString() =>
+      "directive($name, $arguments)" + (pos != null ? "[$pos]" : "");
 }

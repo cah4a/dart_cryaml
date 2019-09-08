@@ -133,13 +133,13 @@ class Context {
     for (final indent in indentator(newIndent, listMarkIndent)) {
       switch (indent) {
         case Indentation.indent:
-          yield Token.indent;
+          yield Token.indent(pos);
           break;
         case Indentation.dedent:
-          yield Token.dedent;
+          yield Token.dedent(pos);
           break;
         case Indentation.listIndent:
-          yield Token.listMark;
+          yield Token.listMark(startPos + newIndent);
           break;
         case Indentation.unknown:
           fail("Undefined indentation");
@@ -181,7 +181,7 @@ Iterable<Token> start(Context context) sync* {
   if (context.chars(2) == "- ") {
     context.consumeChar();
     context.trim();
-    yield Token.listMark;
+    yield Token.listMark(context.pos);
     context.state = start;
     return;
   }
@@ -189,7 +189,7 @@ Iterable<Token> start(Context context) sync* {
   final key = context.lookahead(RegExp("[A-Za-z][A-Za-z0-9-_]*[\s\t]*:"));
 
   if (key != null) {
-    yield Token.key(key.substring(0, key.length - 1).trim());
+    yield Token.key(key.substring(0, key.length - 1).trim(), context.pos);
     context.pos += key.length;
     context.trim();
     context.state = objectValue;
@@ -200,6 +200,8 @@ Iterable<Token> start(Context context) sync* {
 }
 
 Iterable<Token> directive(Context context) sync* {
+  final startPos = context.pos - 1;
+
   final name = context.grabTo(
     RegExp(r"\n|\s|$"),
     "Newline or space or eof expected",
@@ -217,7 +219,7 @@ Iterable<Token> directive(Context context) sync* {
     context,
   );
 
-  yield Token.directive(name, args);
+  yield Token.directive(name, args, startPos);
   context.trim();
   context.ensureNewLine();
   context.state = start;
@@ -247,9 +249,10 @@ Iterable<Token> objectValue(Context context) sync* {
 }
 
 Iterable<Token> expression(Context context) sync* {
+  final startPos = context.pos;
   final expression = parseExpression(expressionParser, context);
   if (expression != null) {
-    yield Token.expr(expression);
+    yield Token.expr(expression, startPos);
   }
   context.state = start;
   context.ensureNewLine();

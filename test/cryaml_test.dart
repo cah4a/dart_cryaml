@@ -377,18 +377,46 @@ void main() {
   });
 
   group('errors', () {
-    final sources = {
-      "expressions": "\$int * 2\n2+2",
-      "documents": "foo: bar\n- list",
-    };
+    test("several expressions error", () {
+      expect(
+        () => loadCrYAML("\$int * 2\n2+2"),
+        throwsA(
+          TypeMatcher<FormatException>()
+              .having(
+                  (e) => e.message, "", contains("Found several expressions"))
+              .having((e) => e.offset, "offset", 9),
+        ),
+      );
+    });
 
-    sources.forEach((type, source) {
-      test('several $type', () {
-        expect(
-          () => loadCrYAML(source),
-          throwsA(TypeMatcher<FormatException>()),
-        );
-      });
+    test("list in map", () {
+      expect(
+        () => loadCrYAML('foo: "bar"\n- bar:'),
+        throwsA(
+          TypeMatcher<FormatException>()
+              .having(
+                (e) => e.message,
+                "",
+                contains("Expected a key while parsing a block mapping."),
+              )
+              .having((e) => e.offset, "offset", 11),
+        ),
+      );
+    });
+
+    test("map in list", () {
+      expect(
+        () => loadCrYAML('- "bar"\nfoo: "bar"'),
+        throwsA(
+          TypeMatcher<FormatException>()
+              .having(
+                (e) => e.message,
+                "",
+                contains("While parsing a block collection, expected '-'"),
+              )
+              .having((e) => e.offset, "offset", 8),
+        ),
+      );
     });
 
     test("wrong directive call method", () {
