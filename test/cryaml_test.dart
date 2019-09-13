@@ -374,6 +374,35 @@ void main() {
         ],
       );
     });
+
+    test('gluing lists', () {
+      final object = Object();
+
+      final specification = Specification(
+        directives: {
+          "foobar": _CrYAMLDirective(
+            DirectiveSpec(),
+            (ctx) => [object, object],
+          )
+        },
+      );
+
+      final cryaml = loadCrYAML(
+        [
+          r'key:',
+          r'  - 1',
+          r'  - @foobar',
+        ].join("\n"),
+        specification,
+      );
+
+      expect(
+        cryaml.evaluate({}),
+        {
+          "key": [1, object, object],
+        },
+      );
+    });
   });
 
   group('errors', () {

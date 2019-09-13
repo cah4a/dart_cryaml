@@ -21,7 +21,25 @@ class CrYAMLList<T> extends DelegatingList<T> implements CrYAMLNode {
   CrYAMLList(List<T> base) : super(base);
 
   @override
-  List evaluate(CrYAMLContext context) => map(context.eval).toList();
+  List evaluate(CrYAMLContext context) {
+    final result = [];
+
+    for (final node in this) {
+      if (node is CrYAMLDirectiveNode) {
+        final value = context.eval(node);
+
+        if (value is Iterable) {
+          result.addAll(value);
+        } else {
+          result.add(value);
+        }
+      } else {
+        result.add(context.eval(node));
+      }
+    }
+
+    return result;
+  }
 }
 
 typedef Eval<T> = T Function([CrYAMLContext context]);
