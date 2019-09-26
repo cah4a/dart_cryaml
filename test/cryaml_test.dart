@@ -299,6 +299,33 @@ void main() {
       );
     });
 
+    test('arguments with interpolation', () {
+      final specification = Specification(
+        directives: {
+          "foobar": _CrYAMLDirective(
+            const DirectiveSpec(
+              arguments: [ArgumentType.expression],
+            ),
+            (CrYAMLContext ctx, String argument) => argument,
+          ),
+        },
+      );
+
+      final cryaml = loadCrYAML(
+        [
+          r'',
+          r'@foobar "foo#{$var}"',
+          r'',
+        ].join("\n"),
+        specification,
+      );
+
+      expect(
+        cryaml.evaluate({"var": "bar"}),
+        "foobar",
+      );
+    });
+
     test('directives array', () {
       final object = Object();
 

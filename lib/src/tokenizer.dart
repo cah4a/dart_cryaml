@@ -273,7 +273,7 @@ dynamic parseExpression(pp.Parser parser, Context context) {
         break;
       case ")":
       case "]":
-      case "{":
+      case "}":
         expectEndOfExpr--;
         break;
       case "\n":
