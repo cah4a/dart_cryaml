@@ -134,7 +134,7 @@ class CrYAMLDirectiveNode implements CrYAMLNode {
         break;
       case ChildrenType.single:
         if (children == null || children.isEmpty) {
-          named[const Symbol('child')] = () => null;
+          named[const Symbol('child')] = ([CrYAMLContext context]) => null;
         } else {
           named[const Symbol('child')] = _eval(context, children.first);
         }
