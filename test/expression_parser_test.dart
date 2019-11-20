@@ -192,6 +192,19 @@ void main() {
     );
   });
 
+  BinaryExpression.operations.keys.forEach(
+    (operation) => test('binary operation $operation', () {
+      expect(
+        parse("202 $operation \$number"),
+        BinaryExpression(
+          LiteralExpression<int>(202),
+          operation,
+          VarExpression("number"),
+        ),
+      );
+    }),
+  );
+
   test('binary with grouping', () {
     expect(
       parse(r"202 + ($number + 4)"),

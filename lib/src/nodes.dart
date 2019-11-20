@@ -145,7 +145,21 @@ class CrYAMLDirectiveNode implements CrYAMLNode {
 
     try {
       return Function.apply((directive as dynamic).call, args, named);
-    } on NoSuchMethodError {
+    } on NoSuchMethodError catch (e, stackTrace) {
+      final stack = stackTrace.toString().split("\n");
+
+      for (final line in stack) {
+        if (line.contains("dart:core")) {
+          continue;
+        }
+
+        if (line.contains('CrYAMLDirectiveNode.evaluate')) {
+          break;
+        } else {
+          rethrow;
+        }
+      }
+
       final signature = _makeSignature(spec);
 
       throw CrYAMLEvaluateException(

@@ -496,6 +496,22 @@ void main() {
         ),
       );
     });
+
+    test("wrong directive inside directive", () {
+      final spec = Specification(
+        directives: {
+          "foobar": _CrYAMLDirective(
+            DirectiveSpec(arguments: [ArgumentType.expression]),
+            (CrYAMLContext context, val) => val.notExistsMethod(),
+          ),
+        },
+      );
+
+      expect(
+        () => loadCrYAML("@foobar 2", spec).evaluate({}),
+        throwsA(TypeMatcher<NoSuchMethodError>()),
+      );
+    });
   });
 }
 

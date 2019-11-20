@@ -214,7 +214,7 @@ Iterable<Token> directive(Context context) sync* {
         .separatedBy(
           pp.char(" ").plus(),
           includeSeparators: false,
-        )
+        ).trim()
         .optional(),
     context,
   );

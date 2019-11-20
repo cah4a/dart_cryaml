@@ -81,9 +81,9 @@ class _ExpressionGrammar extends GrammarDefinition {
 
   Parser call() => (funcNameToken &
           comment(char("(") & whitespace().star()) &
-          ref(positionalArguments).optional() &
-          ref(namedArguments).optional() &
-          comment(char(")").trim()))
+          ref(positionalArguments).trim().optional() &
+          ref(namedArguments).trim().optional() &
+          comment(char(")")))
       .map(parseCall);
 
   Parser positionalArguments() => ref(expression).separatedBy(
@@ -147,10 +147,7 @@ final numberToken = (char('-').optional() &
     .flatten("number expected")
     .map(parseNumber);
 
-final operations = BinaryExpression.operations.keys
-    .map((v) => string(v))
-    .reduce((a, b) => (a | b).cast<String>())
-    .trim();
+final operations = _OperationsParser().trim();
 
 Expression parseNumber(each) {
   final floating = double.parse(each);
@@ -195,9 +192,9 @@ Expression parseCall(List each) {
 Map<String, Expression> parseNamedArgs(List each) {
   final data = each.map(
     (item) => MapEntry<String, Expression>(
-          item[0],
-          item[2],
-        ),
+      item[0],
+      item[2],
+    ),
   );
 
   return Map<String, Expression>.fromEntries(data);
@@ -239,4 +236,31 @@ Expression parseExpression(List each) {
   }
 
   return BinaryExpression(each[0], each[1], each[2]);
+}
+
+class _OperationsParser extends Parser {
+  final operations = BinaryExpression.operations.keys.toList()
+    ..sort((l, r) => r.length.compareTo(l.length));
+
+  @override
+  Parser copy() => _OperationsParser();
+
+  @override
+  Result parseOn(Context context) {
+    final start = context.position;
+
+    for (final operation in operations) {
+      final stop = start + operation.length;
+
+      if (stop <= context.buffer.length) {
+        final result = context.buffer.substring(start, stop);
+
+        if (result == operation) {
+          return context.success(result, stop);
+        }
+      }
+    }
+
+    return context.failure("Operation expected");
+  }
 }

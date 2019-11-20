@@ -483,6 +483,37 @@ main() {
       );
     });
 
+    test("directive different type of args", () {
+      final source = [
+        r'@foobar $var as foo() full',
+      ].join("\n");
+
+      expectTokens(
+        tokenizer.tokenize(source),
+        [
+          Token.directive("foobar", [
+            VarExpression("var"),
+            "as",
+            CallExpression("foo"),
+            "full",
+          ]),
+        ],
+      );
+    });
+
+    test("directive expression tolerance to spaces", () {
+      final source = [
+        r'@foobar $var    ',
+      ].join("\n");
+
+      expectTokens(
+        tokenizer.tokenize(source),
+        [
+          Token.directive("foobar", [VarExpression("var")]),
+        ],
+      );
+    });
+
     test("list of directives", () {
       final source = [
         r'- @foobar',
@@ -576,11 +607,11 @@ class MatchToken<T extends Token> extends Matcher {
     return matchers.keys.fold(
       mismatchDescription.add("Got").addDescriptionOf(item),
       (mismatchDescription, matcher) => matcher.describeMismatch(
-            matchers[matcher](item),
-            mismatchDescription,
-            matchState,
-            verbose,
-          ),
+        matchers[matcher](item),
+        mismatchDescription,
+        matchState,
+        verbose,
+      ),
     );
   }
 }
