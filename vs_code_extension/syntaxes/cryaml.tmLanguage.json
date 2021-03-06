@@ -1,0 +1,125 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "CrYAML",
+	"patterns": [
+		{
+			"include": "#directives"
+		},
+		{
+			"include": "#keys"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#variables"
+		},
+		{
+			"include": "#lists"
+		},
+		{
+			"include": "#numbers"
+		},
+		{
+			"include": "#comments"
+		},
+		{
+			"include": "#functions"
+		}
+	],
+	"repository": {
+		"directives": {
+			"name": "keyword.control.cryaml",
+			"begin": "\\s*@",
+			"end": "\\s"
+		},
+		"variables": {
+			"patterns": [
+				{
+					"name": "variable.name.cryaml",
+					"match": "\\$[A-Za-z]*"
+				}
+			]
+		},
+		"strings": {
+			"name": "string.quoted.double.cryaml",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.cryaml",
+					"match": "\\\\."
+				}
+			]
+		},
+		"keys": {
+			"name": "entity.name.tag.cryaml",
+			"begin": "^\\s*[A-Za-z0-9]+",
+			"end": "(:)",
+			"endCaptures": {
+				"1": {
+					"name": "keyword.operator.cryaml"
+				}
+			}
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"name": "constant.numeric.cryaml",
+					"match": "-?\\d+"
+				},
+				{
+					"name": "constant.numeric.cryaml",
+					"match": "-?\\d*\\.\\d+"
+				}
+			]
+		},
+		"comments": {
+			"name": "comment.line.cryaml",
+			"begin": "^#",
+			"end": "$\n?"
+		},
+		"functions": {
+			"begin": "([A-Za-z_][\\w\\.]*)(\\()",
+			"beginCaptures": {
+				"1": {
+					"name": "entity.name.function.cryaml"
+				},
+				"2": {
+					"name": "entity.name.function.cryaml"
+				}
+			},
+			"end": "\\)",
+			"endCaptures": {
+				"0": {
+					"name": "entity.name.function.cryaml"
+				}
+			},
+			"name": "entity.name.function.cryaml",
+			"patterns": [
+				{
+					"include": "#strings"
+				},
+				{
+					"include": "#variables"
+				},
+				{
+					"include": "#numbers"
+				},
+				{
+					"include": "#namedParams"
+				}
+			]
+		},
+		"namedParams": {
+			"name": "constant.character.escape.cryaml",
+			"match": "[A-Za-z]+(:)",
+			"captures": {
+				"1": {
+					"name": "keyword.operator"
+				}
+			}
+		}
+	},
+	"scopeName": "source.cryaml"
+}
